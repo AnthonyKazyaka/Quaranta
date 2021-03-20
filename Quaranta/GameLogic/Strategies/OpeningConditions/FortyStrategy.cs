@@ -1,6 +1,4 @@
 ﻿using CardGameEngine.Cards;
-using CardGameEngine.Collections;
-using CardGameEngine.GameLogic.Strategies.OpeningConditions;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -8,17 +6,17 @@ namespace Quaranta.GameLogic.Strategies.OpeningConditions
 {
     public class FortyStrategy : IOpeningConditionStrategy
     {
-        public bool IsOpeningConditionMet(List<CardGrouping> cardGroupings)
+        public bool IsOpeningConditionMet(List<List<Card>> cardGroupings)
         {
-            if(cardGroupings.Any(x=>x.IsJokerPresent()))
-            {
-                return false;
-            }
+            //if(cardGroupings.Any(x=>x.IsJokerPresent()))
+            //{
+            //    return false;
+            //}
 
             return cardGroupings.Select(x => GetPointValue(x)).Sum() >= 40;
         }
 
-        private int GetPointValue(CardGrouping cards)
+        private int GetPointValue(List<Card> cards)
         {
             int pointValue = 0;
             
