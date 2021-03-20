@@ -19,10 +19,12 @@ namespace Quaranta.GameLogic.Strategies.OpeningConditions
         private int GetPointValue(List<Card> cards)
         {
             int pointValue = 0;
-            
-            pointValue += 11 * cards.Count(x => x.Rank == Rank.Ace);
-            pointValue += 10 * cards.Count(x => x.Rank > Rank.Ten);
-            pointValue += cards.Where(x => x.Rank < Rank.Ten && x.Rank >= Rank.Two).Sum(x => (int)x.Rank);
+
+            var playingCards = cards.Cast<IPlayingCard>().ToList();
+
+            pointValue += 11 * playingCards.Count(x => x.Rank == Rank.Ace);
+            pointValue += 10 * playingCards.Count(x => x.Rank > Rank.Ten);
+            pointValue += playingCards.Where(x => x.Rank < Rank.Ten && x.Rank >= Rank.Two).Sum(x => (int)x.Rank);
 
             return pointValue;
         }

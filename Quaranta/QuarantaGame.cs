@@ -1,9 +1,17 @@
-﻿using CardGameEngine.Game;
+﻿using CardGameEngine.Cards;
+using CardGameEngine.Game;
+using Quaranta.Cards;
 
 namespace Quaranta
 {
     public class QuarantaGame : ICardGame
     {
+        private readonly PointEvaluator _pointEvaluator;
+
+        public QuarantaGame(IPointEvaluator pointEvaluator)
+        {
+
+        }
         //public QuarantaGame(int numberOfPlayers) : base(numberOfPlayers) { }
 
         //public QuarantaGame(List<Player> players) : base(players) { }
