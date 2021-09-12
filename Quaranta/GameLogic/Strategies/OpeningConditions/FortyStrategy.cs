@@ -8,7 +8,10 @@ namespace Quaranta.GameLogic.Strategies.OpeningConditions
     {
         public bool IsOpeningConditionMet(List<List<Card>> cardGroupings)
         {
-            return cardGroupings.Select(x => GetPointValue(x)).Sum() >= 40;
+            var areJokersPresent = cardGroupings.Any(x => x.IsJokerPresent());
+            var doesSumMeetScoreRequirement = cardGroupings.Select(x => GetPointValue(x)).Sum() >= 40;
+
+            return !areJokersPresent && doesSumMeetScoreRequirement;
         }
 
         private int GetPointValue(List<Card> cards)

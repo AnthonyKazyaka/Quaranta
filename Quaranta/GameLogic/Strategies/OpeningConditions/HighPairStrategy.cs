@@ -8,14 +8,11 @@ namespace Quaranta.GameLogic.Strategies.OpeningConditions
     {
         public bool IsOpeningConditionMet(List<List<Card>> cardGroupings)
         {
-            var cards = cardGroupings.SingleOrDefault();
-            if (cards?.Count != 2) // || cards.IsJokerPresent())
-            {
-                return false;
-            }
+            var containsCorrectNumberOfGroups = cardGroupings.Count == 1;
+            var isValidOpeningPair = cardGroupings.All(x => !x.IsJokerPresent() && x.IsSetOfSize(2));
+            var isHighPair = cardGroupings.Cast<IPlayingCard>().Any(x => x.Rank > Rank.Ten || x.Rank == Rank.Ace);
 
-            return cards.All(x=>;
-            //  return cards.IsUniqueSetOfSize(2);
+            return containsCorrectNumberOfGroups && isValidOpeningPair && isHighPair;
         }
     }
 }

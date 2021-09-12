@@ -9,13 +9,11 @@ namespace Quaranta.GameLogic.Strategies.OpeningConditions
     {
         public bool IsOpeningConditionMet(List<List<Card>> cardGroupings)
         {
-            if (cardGroupings.Count != 2)
-            {
-                return false;
-            }
+            var containsCorrectNumberOfGroups = cardGroupings.Count == 2;
+            var containsOneOpeningPair = cardGroupings.Count(x => !x.IsJokerPresent() && x.IsSetOfSize(2)) == 1;
+            var containsOneOpeningThreeOfAKind = cardGroupings.Count(x => !x.IsJokerPresent() && x.IsSetOfSize(3)) == 1;
 
-            return cardGroupings.Any(x => x.Count == 2)     // && !x.IsJokerPresent())
-                && cardGroupings.Any(x => x.Count == 3);    // && !x.IsJokerPresent());
+            return containsCorrectNumberOfGroups && containsOneOpeningPair && containsOneOpeningThreeOfAKind;
         }
     }
 }
