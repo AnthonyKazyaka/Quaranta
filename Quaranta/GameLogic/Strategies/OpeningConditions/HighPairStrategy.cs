@@ -14,7 +14,7 @@ namespace Quaranta.GameLogic.Strategies.OpeningConditions
                 return false;
             }
 
-            return false;
+            return cards.All(x=>;
             //  return cards.IsUniqueSetOfSize(2);
         }
     }

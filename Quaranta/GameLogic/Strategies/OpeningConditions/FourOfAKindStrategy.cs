@@ -9,10 +9,16 @@ namespace Quaranta.GameLogic.Strategies.OpeningConditions
         public bool IsOpeningConditionMet(List<List<Card>> cardSets)
         {
             var cards = cardSets.SingleOrDefault();
-            if (cards?.Count != 4) // || cards.IsJokerPresent())
+
+            var playingCards = cards.Cast<IPlayingCard>().ToList();
+
+            if (playingCards?.Count != 4) // || cards.IsJokerPresent())
             {
                 return false;
             }
+
+            return playingCards.All(x => x.Rank == playingCards.First().Rank) && playingCards.GroupBy(x => x.Suit).All(x => x.Count() == 1);
+
 
             return false;
             //return cards.IsUniqueSetOfSize(4);

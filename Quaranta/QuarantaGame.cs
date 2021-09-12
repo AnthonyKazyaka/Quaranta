@@ -8,10 +8,10 @@ namespace Quaranta
     {
         private readonly PointEvaluator _pointEvaluator;
 
-        public QuarantaGame(IPointEvaluator pointEvaluator)
-        {
+        //public QuarantaGame(List<IPhases>IPointEvaluator pointEvaluator)
+        //{
 
-        }
+        //}
         //public QuarantaGame(int numberOfPlayers) : base(numberOfPlayers) { }
 
         //public QuarantaGame(List<Player> players) : base(players) { }
