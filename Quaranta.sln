@@ -9,6 +9,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GameRunner", "GameRunner\Ga
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CardGameEngine", "..\CardGameEngine\CardGameEngine\CardGameEngine.csproj", "{4E817DE2-4546-49B5-9052-29D109379455}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{9E397EB5-9E32-4014-872A-1D1B644A62C7}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Quaranta.Tests", "Tests\Quaranta.Tests\Quaranta.Tests.csproj", "{18D72B65-5558-452B-A6FF-D47F61086028}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,9 +31,16 @@ Global
 		{4E817DE2-4546-49B5-9052-29D109379455}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4E817DE2-4546-49B5-9052-29D109379455}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4E817DE2-4546-49B5-9052-29D109379455}.Release|Any CPU.Build.0 = Release|Any CPU
+		{18D72B65-5558-452B-A6FF-D47F61086028}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{18D72B65-5558-452B-A6FF-D47F61086028}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{18D72B65-5558-452B-A6FF-D47F61086028}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{18D72B65-5558-452B-A6FF-D47F61086028}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{18D72B65-5558-452B-A6FF-D47F61086028} = {9E397EB5-9E32-4014-872A-1D1B644A62C7}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {AFFBA97F-A9C9-4247-B206-DE3B4C7C1EE9}
