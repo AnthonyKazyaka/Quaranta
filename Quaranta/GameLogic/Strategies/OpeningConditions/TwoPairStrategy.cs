@@ -11,7 +11,7 @@ namespace Quaranta.GameLogic.Strategies.OpeningConditions
         {
             var containsCorrectNumberOfGroups = cardGroups.Count == 2;
             var isValidOpeningPair = cardGroups.All(x => !x.IsJokerPresent() && x.IsSetOfSize(2));
-            var containsOneHighPair = cardGroups.Cast<IPlayingCard>().Any(x => x.Rank > Rank.Ten || x.Rank == Rank.Ace);
+            var containsOneHighPair = cardGroups.Any(x=>x.Cast<IPlayingCard>().All(x => x.Rank > Rank.Ten || x.Rank == Rank.Ace));
             
             return containsCorrectNumberOfGroups && isValidOpeningPair && containsOneHighPair;
         }
