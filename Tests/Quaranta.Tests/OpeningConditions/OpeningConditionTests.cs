@@ -191,6 +191,7 @@ namespace Quaranta.Tests
         [MemberData(nameof(OpeningConditionTests.TwoPairs))]
         [MemberData(nameof(OpeningConditionTests.ThreeOfAKinds))]
         [MemberData(nameof(OpeningConditionTests.FullHouses))]
+        [MemberData(nameof(OpeningConditionTests.Forties))]
         public void IsNotHighPair(List<List<Card>> cardGroups)
         {
             var openingStrategy = new HighPairStrategy();
@@ -372,10 +373,12 @@ namespace Quaranta.Tests
         }
 
         [Theory]
+        [MemberData(nameof(OpeningConditionTests.LowPairs))]
         [MemberData(nameof(OpeningConditionTests.TwoLowPairs))]
         [MemberData(nameof(OpeningConditionTests.HighPairs))]
         [MemberData(nameof(OpeningConditionTests.ThreeOfAKinds))]
         [MemberData(nameof(OpeningConditionTests.FullHouses))]
+        [MemberData(nameof(OpeningConditionTests.Forties))]
         public void IsNotTwoPair(List<List<Card>> cardGroups)
         {
             var openingStrategy = new TwoPairStrategy();
@@ -506,7 +509,7 @@ namespace Quaranta.Tests
             };
 
             yield return new object[]
-            {       
+            {
                 new List<List<Card>>
                 {
                     new List<Card>
@@ -570,8 +573,11 @@ namespace Quaranta.Tests
 
         [Theory]
         [MemberData(nameof(OpeningConditionTests.LowPairs))]
+        [MemberData(nameof(OpeningConditionTests.HighPairs))]
         [MemberData(nameof(OpeningConditionTests.TwoLowPairs))]
         [MemberData(nameof(OpeningConditionTests.TwoPairs))]
+        [MemberData(nameof(OpeningConditionTests.FullHouses))]
+        [MemberData(nameof(OpeningConditionTests.Forties))]
         public void IsNotThreeOfAKind(List<List<Card>> cardGroups)
         {
             var openingStrategy = new ThreeOfAKindStrategy();
@@ -658,7 +664,7 @@ namespace Quaranta.Tests
         }
 
         [Theory]
-        [MemberData(nameof(OpeningConditionTests.TwoPairs))]
+        [MemberData(nameof(OpeningConditionTests.FullHouses))]
         public void IsFullHouse(List<List<Card>> cardGroups)
         {
             var openingStrategy = new FullHouseStrategy();
@@ -669,13 +675,253 @@ namespace Quaranta.Tests
         }
 
         [Theory]
+        [MemberData(nameof(OpeningConditionTests.LowPairs))]
         [MemberData(nameof(OpeningConditionTests.HighPairs))]
         [MemberData(nameof(OpeningConditionTests.TwoPairs))]
         [MemberData(nameof(OpeningConditionTests.TwoLowPairs))]
         [MemberData(nameof(OpeningConditionTests.ThreeOfAKinds))]
+        [MemberData(nameof(OpeningConditionTests.Forties))]
         public void IsNotFullHouse(List<List<Card>> cardGroups)
         {
             var openingStrategy = new FullHouseStrategy();
+
+            var isConditionMet = openingStrategy.IsOpeningConditionMet(_player, cardGroups);
+
+            Assert.False(isConditionMet);
+        }
+        #endregion
+        #region Forty
+        public static IEnumerable<object[]> Forties()
+        {
+            yield return new object[]
+            {
+                new List<List<Card>>
+                {
+                    new List<Card>
+                    {
+                        new PlayingCard(Suit.Clubs, Rank.Jack),
+                        new PlayingCard(Suit.Hearts, Rank.Jack),
+                        new PlayingCard(Suit.Diamonds, Rank.Jack)
+                    },
+                    new List<Card>
+                    {
+                        new PlayingCard(Suit.Clubs, Rank.Four),
+                        new PlayingCard(Suit.Hearts, Rank.Four),
+                        new PlayingCard(Suit.Diamonds, Rank.Four),
+                    }
+                }
+            };
+
+            yield return new object[]
+            {
+                new List<List<Card>>
+                {
+                    new List<Card>
+                    {
+                        new PlayingCard(Suit.Diamonds, Rank.Ace),
+                        new PlayingCard(Suit.Spades, Rank.Ace),
+                        new PlayingCard(Suit.Clubs, Rank.Ace)
+                    },
+                    new List<Card>
+                    {
+                        new PlayingCard(Suit.Diamonds, Rank.Queen),
+                        new PlayingCard(Suit.Spades, Rank.Queen),
+                        new PlayingCard(Suit.Clubs, Rank.Queen)
+                    },
+                }
+            };
+
+            yield return new object[]
+{
+                new List<List<Card>>
+                {
+                    new List<Card>
+                    {
+                        new PlayingCard(Suit.Diamonds, Rank.Seven),
+                        new PlayingCard(Suit.Spades, Rank.Seven),
+                        new PlayingCard(Suit.Clubs, Rank.Seven)
+                    },
+                    new List<Card>
+                    {
+                        new PlayingCard(Suit.Diamonds, Rank.Eight),
+                        new PlayingCard(Suit.Spades, Rank.Eight),
+                        new PlayingCard(Suit.Clubs, Rank.Eight)
+                    },
+                }
+};
+
+            yield return new object[]
+            {
+                new List<List<Card>>
+                {
+                    new List<Card>
+                    {
+                        new PlayingCard(Suit.Clubs, Rank.Four),
+                        new PlayingCard(Suit.Diamonds, Rank.Four),
+                        new PlayingCard(Suit.Spades, Rank.Four),
+                        new PlayingCard(Suit.Hearts, Rank.Four)
+                    },
+                    new List<Card>
+                    {
+                        new PlayingCard(Suit.Spades, Rank.Six),
+                        new PlayingCard(Suit.Diamonds, Rank.Six),
+                        new PlayingCard(Suit.Clubs, Rank.Six),
+                        new PlayingCard(Suit.Hearts, Rank.Six)
+                    }
+                }
+            };
+
+            yield return new object[]
+            {
+                new List<List<Card>>
+                {
+                    new List<Card>
+                    {
+                        new PlayingCard(Suit.Spades, Rank.Two),
+                        new PlayingCard(Suit.Hearts, Rank.Two),
+                        new PlayingCard(Suit.Diamonds, Rank.Two),
+                        new PlayingCard(Suit.Clubs, Rank.Two)
+                    },
+                    new List<Card>
+                    {
+                        new PlayingCard(Suit.Clubs, Rank.Four),
+                        new PlayingCard(Suit.Diamonds, Rank.Four),
+                        new PlayingCard(Suit.Spades, Rank.Four),
+                        new PlayingCard(Suit.Hearts, Rank.Four)
+                    },
+                    new List<Card>
+                    {
+                        new PlayingCard(Suit.Clubs, Rank.Four),
+                        new PlayingCard(Suit.Diamonds, Rank.Four),
+                        new PlayingCard(Suit.Spades, Rank.Four),
+                        new PlayingCard(Suit.Hearts, Rank.Four)
+                    },
+                }
+            };
+        }
+
+        [Theory]
+        [MemberData(nameof(OpeningConditionTests.Forties))]
+        public void IsForty(List<List<Card>> cardGroups)
+        {
+            var openingStrategy = new FortyStrategy();
+
+            var isConditionMet = openingStrategy.IsOpeningConditionMet(_player, cardGroups);
+
+            Assert.True(isConditionMet);
+        }
+
+        [Theory]
+        [MemberData(nameof(OpeningConditionTests.LowPairs))]
+        [MemberData(nameof(OpeningConditionTests.HighPairs))]
+        [MemberData(nameof(OpeningConditionTests.TwoPairs))]
+        [MemberData(nameof(OpeningConditionTests.TwoLowPairs))]
+        [MemberData(nameof(OpeningConditionTests.ThreeOfAKinds))]
+        [MemberData(nameof(OpeningConditionTests.FullHouses))]
+        public void IsNotForty(List<List<Card>> cardGroups)
+        {
+            var openingStrategy = new FortyStrategy();
+
+            var isConditionMet = openingStrategy.IsOpeningConditionMet(_player, cardGroups);
+
+            Assert.False(isConditionMet);
+        }
+        #endregion
+        #region FourOfAKind
+        public static IEnumerable<object[]> FourOfAKinds()
+        {
+            yield return new object[]
+            {
+                new List<List<Card>>
+                {
+                    new List<Card>
+                    {
+                        new PlayingCard(Suit.Clubs, Rank.Jack),
+                        new PlayingCard(Suit.Hearts, Rank.Jack),
+                        new PlayingCard(Suit.Diamonds, Rank.Jack),
+                        new PlayingCard(Suit.Spades, Rank.Jack)
+                    }
+                }
+            };
+
+            yield return new object[]
+            {
+                new List<List<Card>>
+                {
+                    new List<Card>
+                    {
+                        new PlayingCard(Suit.Diamonds, Rank.Ace),
+                        new PlayingCard(Suit.Spades, Rank.Ace),
+                        new PlayingCard(Suit.Clubs, Rank.Ace),
+                        new PlayingCard(Suit.Hearts, Rank.Ace)
+                    }
+                }
+            };
+
+            yield return new object[]
+            {
+                new List<List<Card>>
+                {
+                    new List<Card>
+                    {
+                        new PlayingCard(Suit.Diamonds, Rank.Seven),
+                        new PlayingCard(Suit.Spades, Rank.Seven),
+                        new PlayingCard(Suit.Clubs, Rank.Seven),
+                        new PlayingCard(Suit.Hearts, Rank.Seven)
+                    }
+                }
+            };
+
+            yield return new object[]
+            {
+                new List<List<Card>>
+                {
+                    new List<Card>
+                    {
+                        new PlayingCard(Suit.Clubs, Rank.Four),
+                        new PlayingCard(Suit.Diamonds, Rank.Four),
+                        new PlayingCard(Suit.Spades, Rank.Four),
+                        new PlayingCard(Suit.Hearts, Rank.Four)
+                    }
+                }
+            };
+
+            yield return new object[]
+            {
+                new List<List<Card>>
+                {
+                    new List<Card>
+                    {
+                        new PlayingCard(Suit.Spades, Rank.Two),
+                        new PlayingCard(Suit.Hearts, Rank.Two),
+                        new PlayingCard(Suit.Diamonds, Rank.Two),
+                        new PlayingCard(Suit.Clubs, Rank.Two)
+                    }
+                }
+            };
+        }
+
+        [Theory]
+        [MemberData(nameof(OpeningConditionTests.FourOfAKinds))]
+        public void IsFourOfAKind(List<List<Card>> cardGroups)
+        {
+            var openingStrategy = new FourOfAKindStrategy();
+
+            var isConditionMet = openingStrategy.IsOpeningConditionMet(_player, cardGroups);
+
+            Assert.True(isConditionMet);
+        }
+
+        [Theory]
+        [MemberData(nameof(OpeningConditionTests.LowPairs))]
+        [MemberData(nameof(OpeningConditionTests.HighPairs))]
+        [MemberData(nameof(OpeningConditionTests.TwoPairs))]
+        [MemberData(nameof(OpeningConditionTests.TwoLowPairs))]
+        [MemberData(nameof(OpeningConditionTests.ThreeOfAKinds))]
+        [MemberData(nameof(OpeningConditionTests.FullHouses))]
+        public void IsNotFourOfAKind(List<List<Card>> cardGroups)
+        {
+            var openingStrategy = new FourOfAKindStrategy();
 
             var isConditionMet = openingStrategy.IsOpeningConditionMet(_player, cardGroups);
 

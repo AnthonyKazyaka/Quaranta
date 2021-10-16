@@ -11,8 +11,9 @@ namespace Quaranta.GameLogic.Strategies.OpeningConditions
         {
             var areJokersPresent = cardGroups.Any(x => x.IsJokerPresent());
             var doesSumMeetScoreRequirement = cardGroups.Select(x => GetPointValue(x)).Sum() >= 40;
+            var enoughCardsInEachGroup = cardGroups.All(x => x.Count() >= 3);
 
-            return !areJokersPresent && doesSumMeetScoreRequirement;
+            return !areJokersPresent && doesSumMeetScoreRequirement && enoughCardsInEachGroup;
         }
 
         private int GetPointValue(List<Card> cards)

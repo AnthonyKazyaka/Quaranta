@@ -10,7 +10,7 @@ namespace Quaranta.GameLogic.Strategies.OpeningConditions
         public bool IsOpeningConditionMet(Player player, List<List<Card>> cardGroups)
         {
             var containsCorrectNumberOfGroups = cardGroups.Count == 1;
-            var isValidOpeningFourOfAKind = cardGroups.All(x => !x.IsJokerPresent() && x.IsSetOfSize(3));
+            var isValidOpeningFourOfAKind = cardGroups.All(x => !x.IsJokerPresent() && x.IsSetOfSize(4));
 
             return containsCorrectNumberOfGroups && isValidOpeningFourOfAKind;
         }
