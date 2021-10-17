@@ -1043,36 +1043,24 @@ namespace Quaranta.Tests
                         new PlayingCard(Suit.Clubs, Rank.Queen),
                         new PlayingCard(Suit.Clubs, Rank.King),
                         new PlayingCard(Suit.Clubs, Rank.Ace)
-                    }
-                }
-            };
-
-            yield return new object[]
-            {
-                new List<List<Card>>
-                {
+                    },
                     new List<Card>
                     {
                         new PlayingCard(Suit.Hearts, Rank.Two),
                         new PlayingCard(Suit.Hearts, Rank.Three),
-                        new PlayingCard(Suit.Hearts, Rank.Four),
-                        new PlayingCard(Suit.Hearts, Rank.Five),
-                        new PlayingCard(Suit.Hearts, Rank.Six)
-                    }
-                }
-            };
-
-            yield return new object[]
-            {
-                new List<List<Card>>
-                {
+                        new PlayingCard(Suit.Hearts, Rank.Four)
+                    },
                     new List<Card>
                     {
-                        new PlayingCard(Suit.Spades, Rank.Seven),
-                        new PlayingCard(Suit.Spades, Rank.Eight),
-                        new PlayingCard(Suit.Spades, Rank.Nine),
-                        new PlayingCard(Suit.Spades, Rank.Ten),
-                        new PlayingCard(Suit.Spades, Rank.Jack)
+                        new PlayingCard(Suit.Clubs, Rank.Jack),
+                        new PlayingCard(Suit.Hearts, Rank.Jack),
+                        new PlayingCard(Suit.Diamonds, Rank.Jack)
+                    },
+                    new List<Card>
+                    {
+                        new PlayingCard(Suit.Clubs, Rank.Four),
+                        new PlayingCard(Suit.Hearts, Rank.Four),
+                        new PlayingCard(Suit.Diamonds, Rank.Four)
                     }
                 }
             };
@@ -1088,16 +1076,73 @@ namespace Quaranta.Tests
                         new PlayingCard(Suit.Diamonds, Rank.Six),
                         new PlayingCard(Suit.Diamonds, Rank.Seven),
                         new PlayingCard(Suit.Diamonds, Rank.Eight)
+                    },
+                    new List<Card>
+                    {
+                        new PlayingCard(Suit.Spades, Rank.Two),
+                        new PlayingCard(Suit.Spades, Rank.Three),
+                        new PlayingCard(Suit.Spades, Rank.Four)
+                    },
+                    new List<Card>
+                    {
+                        new PlayingCard(Suit.Clubs, Rank.Four),
+                        new PlayingCard(Suit.Hearts, Rank.Four),
+                        new PlayingCard(Suit.Diamonds, Rank.Four)
+                    },
+                    new List<Card>
+                    {
+                        new PlayingCard(Suit.Clubs, Rank.Four),
+                        new PlayingCard(Suit.Hearts, Rank.Four),
+                        new PlayingCard(Suit.Diamonds, Rank.Four)
+                    }
+                }
+            };
+
+            yield return new object[]
+            {
+                new List<List<Card>>
+                {
+                    new List<Card>
+                    {
+                        new PlayingCard(Suit.Diamonds, Rank.Four),
+                        new PlayingCard(Suit.Clubs, Rank.Four),
+                        new PlayingCard(Suit.Spades, Rank.Four),
+                        new PlayingCard(Suit.Hearts, Rank.Four)
+                    },
+                    new List<Card>
+                    {
+                        new PlayingCard(Suit.Spades, Rank.Two),
+                        new PlayingCard(Suit.Spades, Rank.Three),
+                        new PlayingCard(Suit.Spades, Rank.Four)
+                    },
+                    new List<Card>
+                    {
+                        new PlayingCard(Suit.Clubs, Rank.Four),
+                        new PlayingCard(Suit.Hearts, Rank.Four),
+                        new PlayingCard(Suit.Diamonds, Rank.Four)
+                    },
+                    new List<Card>
+                    {
+                        new PlayingCard(Suit.Clubs, Rank.Four),
+                        new PlayingCard(Suit.Hearts, Rank.Four),
+                        new PlayingCard(Suit.Diamonds, Rank.Four)
                     }
                 }
             };
         }
 
         [Theory]
-        [MemberData(nameof(OpeningConditionTests.StraightFlushes))]
+        [MemberData(nameof(OpeningConditionTests.AllDowns))]
         public void IsAllDown(List<List<Card>> cardGroups)
         {
             var openingStrategy = new AllDownStrategy();
+
+            foreach (var cards in cardGroups)
+            {
+                _player.Hand.AddRange(cards);
+            }
+
+            _player.Hand.Add(new PlayingCard(Suit.Spades, Rank.Five));
 
             var isConditionMet = openingStrategy.IsOpeningConditionMet(_player, cardGroups);
 
@@ -1116,6 +1161,11 @@ namespace Quaranta.Tests
         public void IsNotAllDown(List<List<Card>> cardGroups)
         {
             var openingStrategy = new AllDownStrategy();
+
+            foreach(var cards in cardGroups)
+            {
+                _player.Hand.AddRange(cards);
+            }
 
             var isConditionMet = openingStrategy.IsOpeningConditionMet(_player, cardGroups);
 
