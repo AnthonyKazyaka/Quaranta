@@ -9,7 +9,8 @@ namespace Quaranta.GameLogic.Strategies.OpeningConditions
     {
         public bool IsOpeningConditionMet(Player player, List<List<Card>> cardGroups)
         {
-            if (cardGroups.Sum(x => x.Count) != player.Hand.Count - 1)
+            var cardCount = cardGroups.Sum(x => x.Count);
+            if (cardCount < 13 || cardCount != player.Hand.Count - 1)
             {
                 // If these groups don't account for every card in the player's hand (except for the discard),
                 // then this is not a valid opening for All Down.

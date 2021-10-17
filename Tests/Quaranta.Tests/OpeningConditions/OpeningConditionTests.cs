@@ -192,6 +192,7 @@ namespace Quaranta.Tests
         [MemberData(nameof(OpeningConditionTests.ThreeOfAKinds))]
         [MemberData(nameof(OpeningConditionTests.FullHouses))]
         [MemberData(nameof(OpeningConditionTests.Forties))]
+        [MemberData(nameof(OpeningConditionTests.StraightFlushes))]
         public void IsNotHighPair(List<List<Card>> cardGroups)
         {
             var openingStrategy = new HighPairStrategy();
@@ -379,6 +380,7 @@ namespace Quaranta.Tests
         [MemberData(nameof(OpeningConditionTests.ThreeOfAKinds))]
         [MemberData(nameof(OpeningConditionTests.FullHouses))]
         [MemberData(nameof(OpeningConditionTests.Forties))]
+        [MemberData(nameof(OpeningConditionTests.StraightFlushes))]
         public void IsNotTwoPair(List<List<Card>> cardGroups)
         {
             var openingStrategy = new TwoPairStrategy();
@@ -578,6 +580,7 @@ namespace Quaranta.Tests
         [MemberData(nameof(OpeningConditionTests.TwoPairs))]
         [MemberData(nameof(OpeningConditionTests.FullHouses))]
         [MemberData(nameof(OpeningConditionTests.Forties))]
+        [MemberData(nameof(OpeningConditionTests.StraightFlushes))]
         public void IsNotThreeOfAKind(List<List<Card>> cardGroups)
         {
             var openingStrategy = new ThreeOfAKindStrategy();
@@ -681,6 +684,7 @@ namespace Quaranta.Tests
         [MemberData(nameof(OpeningConditionTests.TwoLowPairs))]
         [MemberData(nameof(OpeningConditionTests.ThreeOfAKinds))]
         [MemberData(nameof(OpeningConditionTests.Forties))]
+        [MemberData(nameof(OpeningConditionTests.StraightFlushes))]
         public void IsNotFullHouse(List<List<Card>> cardGroups)
         {
             var openingStrategy = new FullHouseStrategy();
@@ -732,7 +736,7 @@ namespace Quaranta.Tests
             };
 
             yield return new object[]
-{
+            {
                 new List<List<Card>>
                 {
                     new List<Card>
@@ -748,7 +752,7 @@ namespace Quaranta.Tests
                         new PlayingCard(Suit.Clubs, Rank.Eight)
                     },
                 }
-};
+            };
 
             yield return new object[]
             {
@@ -818,6 +822,8 @@ namespace Quaranta.Tests
         [MemberData(nameof(OpeningConditionTests.TwoLowPairs))]
         [MemberData(nameof(OpeningConditionTests.ThreeOfAKinds))]
         [MemberData(nameof(OpeningConditionTests.FullHouses))]
+        //[MemberData(nameof(OpeningConditionTests.StraightFlushes))] One of the test cases for Straight Flush also meets the Forty condition
+        [MemberData(nameof(OpeningConditionTests.AllDowns))]
         public void IsNotForty(List<List<Card>> cardGroups)
         {
             var openingStrategy = new FortyStrategy();
@@ -919,6 +925,8 @@ namespace Quaranta.Tests
         [MemberData(nameof(OpeningConditionTests.TwoLowPairs))]
         [MemberData(nameof(OpeningConditionTests.ThreeOfAKinds))]
         [MemberData(nameof(OpeningConditionTests.FullHouses))]
+        [MemberData(nameof(OpeningConditionTests.StraightFlushes))]
+        [MemberData(nameof(OpeningConditionTests.AllDowns))]
         public void IsNotFourOfAKind(List<List<Card>> cardGroups)
         {
             var openingStrategy = new FourOfAKindStrategy();
@@ -928,136 +936,191 @@ namespace Quaranta.Tests
             Assert.False(isConditionMet);
         }
         #endregion
-        //[Theory]
+        #region Straight Flush
+        public static IEnumerable<object[]> StraightFlushes()
+        {
+            yield return new object[]
+            {
+                new List<List<Card>>
+                {
+                    new List<Card>
+                    {
+                        new PlayingCard(Suit.Clubs, Rank.Ten),
+                        new PlayingCard(Suit.Clubs, Rank.Jack),
+                        new PlayingCard(Suit.Clubs, Rank.Queen),
+                        new PlayingCard(Suit.Clubs, Rank.King),
+                        new PlayingCard(Suit.Clubs, Rank.Ace)
+                    }
+                }
+            };
 
-        //[InlineData(false, 8, 8, 8, 8)]
-        //[InlineData(true, 11, 11, 11, 11)]
-        //[InlineData(false, 11, 11, 11, 11, true)]
-        //[InlineData(false, 11, 11, 11, 11, false, true)]
-        //[InlineData(true, 12, 12, 12, 12)]
-        //[InlineData(false, 12, 12, 12, 12, true)]
-        //[InlineData(false, 12, 12, 12, 12, false, true)]
-        //[InlineData(true, 13, 13, 13, 13)]
-        //[InlineData(false, 13, 13, 13, 13, true)]
-        //[InlineData(false, 13, 13, 13, 13, false, true)]
-        //[InlineData(true, 1, 1, 1, 1)]
-        //[InlineData(false, 1, 1, 1, 1, true)]
-        //[InlineData(false, 1, 1, 1, 1, false, true)]
-        //public void IsTwoPair(bool expectedResult, int card1Rank, int card2Rank, int card3Rank, int card4Rank, bool sameSuitInGroup1 = false, bool sameSuitInGroup2 = false)
-        //{
-        //    var suit1 = Suit.Clubs;
-        //    var suit2 = sameSuitInGroup1 ? suit1 : Suit.Hearts;
+            yield return new object[]
+            {
+                new List<List<Card>>
+                {
+                    new List<Card>
+                    {
+                        new PlayingCard(Suit.Hearts, Rank.Two),
+                        new PlayingCard(Suit.Hearts, Rank.Three),
+                        new PlayingCard(Suit.Hearts, Rank.Four),
+                        new PlayingCard(Suit.Hearts, Rank.Five),
+                        new PlayingCard(Suit.Hearts, Rank.Six)
+                    }
+                }
+            };
 
-        //    var suit3 = Suit.Spades;
-        //    var suit4 = sameSuitInGroup2 ? suit3 : Suit.Diamonds;
+            yield return new object[]
+            {
+                new List<List<Card>>
+                {
+                    new List<Card>
+                    {
+                        new PlayingCard(Suit.Spades, Rank.Seven),
+                        new PlayingCard(Suit.Spades, Rank.Eight),
+                        new PlayingCard(Suit.Spades, Rank.Nine),
+                        new PlayingCard(Suit.Spades, Rank.Ten),
+                        new PlayingCard(Suit.Spades, Rank.Jack)
+                    }
+                }
+            };
 
-        //    List<List<Card>> cardsToCheck = new()
-        //    {
-        //        new List<Card>
-        //        {
-        //            new PlayingCard(suit1, (Rank)card1Rank),
-        //            new PlayingCard(suit2, (Rank)card2Rank)
-        //        },
-        //        new List<Card>
-        //        {
-        //            new PlayingCard(suit3, (Rank)card3Rank),
-        //            new PlayingCard(suit4, (Rank)card4Rank)
-        //        }
-        //    };
+            yield return new object[]
+            {
+                new List<List<Card>>
+                {
+                    new List<Card>
+                    {
+                        new PlayingCard(Suit.Diamonds, Rank.Four),
+                        new PlayingCard(Suit.Diamonds, Rank.Five),
+                        new PlayingCard(Suit.Diamonds, Rank.Six),
+                        new PlayingCard(Suit.Diamonds, Rank.Seven),
+                        new PlayingCard(Suit.Diamonds, Rank.Eight)
+                    }
+                }
+            };
+        }
 
-        //    var openingStrategy = new TwoPairStrategy();
+        [Theory]
+        [MemberData(nameof(OpeningConditionTests.StraightFlushes))]
+        public void IsStraightFlush(List<List<Card>> cardGroups)
+        {
+            var openingStrategy = new StraightFlushStrategy();
 
-        //    var isConditionMet = openingStrategy.IsOpeningConditionMet(_player, cardsToCheck);
+            var isConditionMet = openingStrategy.IsOpeningConditionMet(_player, cardGroups);
 
-        //    Assert.Equal(expectedResult, isConditionMet);
-        //}
+            Assert.True(isConditionMet);
+        }
 
-        //[Theory]
-        //[InlineData(true, 8, 8, 8)]
-        //[InlineData(false, 8, 8, 8, true)]
-        //[InlineData(true, 11, 11, 11)]
-        //[InlineData(false, 11, 11, 11, true)]
-        //[InlineData(true, 12, 12, 12)]
-        //[InlineData(false, 12, 12, 12, true)]
-        //[InlineData(true, 13, 13, 13)]
-        //[InlineData(false, 13, 13, 13, true)]
-        //[InlineData(true, 1, 1, 1)]
-        //[InlineData(false, 1, 1, 1, true)]
-        //public void IsThreeOfAKind(bool expectedResult, int card1Rank, int card2Rank, int card3Rank, bool sameSuit = false)
-        //{
-        //    var suit1 = Suit.Clubs;
-        //    var suit2 = sameSuit ? suit1 : Suit.Hearts;
-        //    var suit3 = sameSuit ? suit1 : Suit.Diamonds;
+        [Theory]
+        [MemberData(nameof(OpeningConditionTests.LowPairs))]
+        [MemberData(nameof(OpeningConditionTests.HighPairs))]
+        [MemberData(nameof(OpeningConditionTests.TwoPairs))]
+        [MemberData(nameof(OpeningConditionTests.TwoLowPairs))]
+        [MemberData(nameof(OpeningConditionTests.ThreeOfAKinds))]
+        [MemberData(nameof(OpeningConditionTests.FullHouses))]
+        //[MemberData(nameof(OpeningConditionTests.Forties))] One of the test cases for Straight Flush also meets the Forty condition
+        [MemberData(nameof(OpeningConditionTests.AllDowns))]
+        public void IsNotStraightFlush(List<List<Card>> cardGroups)
+        {
+            var openingStrategy = new StraightFlushStrategy();
 
-        //    List<List<Card>> cardsToCheck = new()
-        //    {
-        //        new List<Card>
-        //        {
-        //            new PlayingCard(suit1, (Rank)card1Rank),
-        //            new PlayingCard(suit2, (Rank)card2Rank),
-        //            new PlayingCard(suit3, (Rank)card3Rank)
-        //        }
-        //    };
+            var isConditionMet = openingStrategy.IsOpeningConditionMet(_player, cardGroups);
 
-        //    var openingStrategy = new ThreeOfAKindStrategy();
+            Assert.False(isConditionMet);
+        }
+        #endregion
+        #region All Down
+        public static IEnumerable<object[]> AllDowns()
+        {
+            yield return new object[]
+            {
+                new List<List<Card>>
+                {
+                    new List<Card>
+                    {
+                        new PlayingCard(Suit.Clubs, Rank.Ten),
+                        new PlayingCard(Suit.Clubs, Rank.Jack),
+                        new PlayingCard(Suit.Clubs, Rank.Queen),
+                        new PlayingCard(Suit.Clubs, Rank.King),
+                        new PlayingCard(Suit.Clubs, Rank.Ace)
+                    }
+                }
+            };
 
-        //    var isConditionMet = openingStrategy.IsOpeningConditionMet(_player, cardsToCheck);
+            yield return new object[]
+            {
+                new List<List<Card>>
+                {
+                    new List<Card>
+                    {
+                        new PlayingCard(Suit.Hearts, Rank.Two),
+                        new PlayingCard(Suit.Hearts, Rank.Three),
+                        new PlayingCard(Suit.Hearts, Rank.Four),
+                        new PlayingCard(Suit.Hearts, Rank.Five),
+                        new PlayingCard(Suit.Hearts, Rank.Six)
+                    }
+                }
+            };
 
-        //    Assert.Equal(expectedResult, isConditionMet);
-        //}
+            yield return new object[]
+            {
+                new List<List<Card>>
+                {
+                    new List<Card>
+                    {
+                        new PlayingCard(Suit.Spades, Rank.Seven),
+                        new PlayingCard(Suit.Spades, Rank.Eight),
+                        new PlayingCard(Suit.Spades, Rank.Nine),
+                        new PlayingCard(Suit.Spades, Rank.Ten),
+                        new PlayingCard(Suit.Spades, Rank.Jack)
+                    }
+                }
+            };
 
-        //[Theory]
-        //[InlineData(true, new[] { 8, 8 }, new[] { 8, 8, 8 })]
-        //[InlineData(true, 11, 11, 8, 8, 8)]
-        //[InlineData(false, 11, 11, 8, 8, 8, true)]
-        //[InlineData(false, 11, 11, 2, 2, 2, false, true)]
-        //[InlineData(true, 12, 12, 8, 8, 8)]
-        //[InlineData(false, 12, 12, 5, 5, 5, true)]
-        //[InlineData(false, 12, 12, 8, 8, 12, false, true)]
-        //[InlineData(true, 13, 13, 4, 4, 4)]
-        //[InlineData(false, 13, 13, 7, 7, 7, true)]
-        //[InlineData(false, 13, 13, 9, 9, 9, false, true)]
-        //[InlineData(true, 1, 1, 1, 1, 1)]
-        //[InlineData(false, 1, 1, 1, 1, 1, true)]
-        //[InlineData(false, 1, 1, 1, 1, 1, false, true)]
-        //[InlineData(true, 8, 8, 13, 13, 13)]
-        //public void IsFullHouse(bool expectedResult, int[] cardGroup1Ranks, int[] cardGroup2Ranks, bool sameSuitInGroup1 = false, bool sameSuitInGroup2 = false)
-        //{
-        //    var suits = new List<Suit>
-        //    {
-        //        Suit.Clubs,
-        //        Suit.Hearts,
-        //        Suit.Spades,
-        //        Suit.Diamonds,
-        //        Suit.Clubs
-        //    };
+            yield return new object[]
+            {
+                new List<List<Card>>
+                {
+                    new List<Card>
+                    {
+                        new PlayingCard(Suit.Diamonds, Rank.Four),
+                        new PlayingCard(Suit.Diamonds, Rank.Five),
+                        new PlayingCard(Suit.Diamonds, Rank.Six),
+                        new PlayingCard(Suit.Diamonds, Rank.Seven),
+                        new PlayingCard(Suit.Diamonds, Rank.Eight)
+                    }
+                }
+            };
+        }
 
-        //    for(var i = 0; i++; i < cardGroup1Ranks.Count())
-        //    {
-        //        group1.Add(new PlayingCard())
-        //    }
+        [Theory]
+        [MemberData(nameof(OpeningConditionTests.StraightFlushes))]
+        public void IsAllDown(List<List<Card>> cardGroups)
+        {
+            var openingStrategy = new AllDownStrategy();
 
-        //    var group2 = new List<Card>();
-        //    List<List<Card>> cardsToCheck = new()
-        //    {
-        //        new List<Card>
-        //        {
-        //            new PlayingCard(suit1, (Rank)card1Rank),
-        //            new PlayingCard(suit2, (Rank)card2Rank)
-        //        },
-        //        new List<Card>
-        //        {
-        //            new PlayingCard(suit3, (Rank)card3Rank),
-        //            new PlayingCard(suit4, (Rank)card4Rank),
-        //            new PlayingCard(suit5, (Rank)card5Rank)
-        //        }
-        //    };
+            var isConditionMet = openingStrategy.IsOpeningConditionMet(_player, cardGroups);
 
-        //    var openingStrategy = new FullHouseStrategy();
+            Assert.True(isConditionMet);
+        }
 
-        //    var isConditionMet = openingStrategy.IsOpeningConditionMet(_player, cardsToCheck);
+        [Theory]
+        [MemberData(nameof(OpeningConditionTests.LowPairs))]
+        [MemberData(nameof(OpeningConditionTests.HighPairs))]
+        [MemberData(nameof(OpeningConditionTests.TwoPairs))]
+        [MemberData(nameof(OpeningConditionTests.TwoLowPairs))]
+        [MemberData(nameof(OpeningConditionTests.ThreeOfAKinds))]
+        [MemberData(nameof(OpeningConditionTests.FullHouses))]
+        [MemberData(nameof(OpeningConditionTests.Forties))]
+        [MemberData(nameof(OpeningConditionTests.StraightFlushes))]
+        public void IsNotAllDown(List<List<Card>> cardGroups)
+        {
+            var openingStrategy = new AllDownStrategy();
 
-        //    Assert.Equal(expectedResult, isConditionMet);
-        //}
+            var isConditionMet = openingStrategy.IsOpeningConditionMet(_player, cardGroups);
+
+            Assert.False(isConditionMet);
+        }
+        #endregion
     }
 }
