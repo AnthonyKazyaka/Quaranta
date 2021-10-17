@@ -823,7 +823,7 @@ namespace Quaranta.Tests
         [MemberData(nameof(OpeningConditionTests.ThreeOfAKinds))]
         [MemberData(nameof(OpeningConditionTests.FullHouses))]
         //[MemberData(nameof(OpeningConditionTests.StraightFlushes))] One of the test cases for Straight Flush also meets the Forty condition
-        [MemberData(nameof(OpeningConditionTests.AllDowns))]
+        //[MemberData(nameof(OpeningConditionTests.AllDowns))]
         public void IsNotForty(List<List<Card>> cardGroups)
         {
             var openingStrategy = new FortyStrategy();
@@ -1142,7 +1142,7 @@ namespace Quaranta.Tests
                 _player.Hand.AddRange(cards);
             }
 
-            _player.Hand.Add(new PlayingCard(Suit.Spades, Rank.Five));
+            _player.Hand.Add(new PlayingCard(Suit.Spades, Rank.Five)); // Add a discard
 
             var isConditionMet = openingStrategy.IsOpeningConditionMet(_player, cardGroups);
 
@@ -1166,6 +1166,8 @@ namespace Quaranta.Tests
             {
                 _player.Hand.AddRange(cards);
             }
+
+            _player.Hand.Add(new PlayingCard(Suit.Spades, Rank.Five)); // Add a discard
 
             var isConditionMet = openingStrategy.IsOpeningConditionMet(_player, cardGroups);
 
