@@ -5,7 +5,11 @@ VisualStudioVersion = 16.0.30320.27
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Quaranta", "Quaranta\Quaranta.csproj", "{912D0E25-620F-4625-8418-6FD3BBD117E5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameRunner", "GameRunner\GameRunner.csproj", "{88713ED5-2545-4111-8EE1-2161805A645A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GameRunner", "GameRunner\GameRunner.csproj", "{88713ED5-2545-4111-8EE1-2161805A645A}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{9E397EB5-9E32-4014-872A-1D1B644A62C7}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Quaranta.Tests", "Tests\Quaranta.Tests\Quaranta.Tests.csproj", "{18D72B65-5558-452B-A6FF-D47F61086028}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,9 +25,16 @@ Global
 		{88713ED5-2545-4111-8EE1-2161805A645A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{88713ED5-2545-4111-8EE1-2161805A645A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{88713ED5-2545-4111-8EE1-2161805A645A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{18D72B65-5558-452B-A6FF-D47F61086028}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{18D72B65-5558-452B-A6FF-D47F61086028}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{18D72B65-5558-452B-A6FF-D47F61086028}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{18D72B65-5558-452B-A6FF-D47F61086028}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{18D72B65-5558-452B-A6FF-D47F61086028} = {9E397EB5-9E32-4014-872A-1D1B644A62C7}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {AFFBA97F-A9C9-4247-B206-DE3B4C7C1EE9}

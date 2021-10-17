@@ -1,4 +1,5 @@
 ﻿using CardGameEngine.Cards;
+using CardGameEngine.Players;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -6,16 +7,13 @@ namespace Quaranta.GameLogic.Strategies.OpeningConditions
 {
     public class HighPairStrategy : IOpeningConditionStrategy
     {
-        public bool IsOpeningConditionMet(List<List<Card>> cardGroupings)
+        public bool IsOpeningConditionMet(Player player, List<List<Card>> cardGroups)
         {
-            var cards = cardGroupings.SingleOrDefault();
-            if (cards?.Count != 2) // || cards.IsJokerPresent())
-            {
-                return false;
-            }
+            var containsCorrectNumberOfGroups = cardGroups.Count == 1;
+            var isValidOpeningPair = cardGroups.All(x => !x.IsJokerPresent() && x.IsSetOfSize(2));
+            var isHighPair = cardGroups.First().Cast<IPlayingCard>().Any(x => x.Rank > Rank.Ten || x.Rank == Rank.Ace);
 
-            return cards.All(x=>;
-            //  return cards.IsUniqueSetOfSize(2);
+            return containsCorrectNumberOfGroups && isValidOpeningPair && isHighPair;
         }
     }
 }
