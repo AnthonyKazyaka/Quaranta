@@ -1,12 +1,24 @@
-﻿using CardGameEngine.Cards;
-using CardGameEngine.Game;
-using Quaranta.GameLogic.PointEvaluators;
+﻿using CardGameEngine.Game.PointEvaluators;
+using CardGameEngine.Players;
+using Quaranta.GameLogic.Phases;
+using Quaranta.GameLogic.Strategies.OpeningConditions;
+using System.Collections.Generic;
 
 namespace Quaranta
 {
-    public class QuarantaGame : ICardGame
+    public class QuarantaGame : IQuarantaGame
     {
-        private readonly PointEvaluator _pointEvaluator;
+        public List<Player> Players { get; }
+        public List<Phase> Phases { get; }
+        private readonly IPointEvaluatorFactory _pointEvaluatorFactory;
+
+        public QuarantaGame(List<Player> players, IPointEvaluatorFactory pointEvaluatorFactory)
+        {
+            Players = players;
+            Phases = GetPhases();
+
+            _pointEvaluatorFactory = pointEvaluatorFactory;            
+        }
 
         //public QuarantaGame(List<IPhases>IPointEvaluator pointEvaluator)
         //{
@@ -20,22 +32,23 @@ namespace Quaranta
 
         public void Play()
         {
-
+            foreach(var phase in Phases)
+            {
+                
+            }
         }
 
-        //protected override List<Phase> GetPhases()
-        //{
-        //    return new List<Phase>
-        //    {
-        //        new Phase(Players, GetQuarantaDeck(), new HighPairStrategy()),
-        //        new Phase(Players, GetQuarantaDeck(), new TwoPairStrategy()),
-        //        new Phase(Players, GetQuarantaDeck(), new ThreeOfAKindStrategy()),
-        //        new Phase(Players, GetQuarantaDeck(), new FullHouseStrategy()),
-        //        new Phase(Players, GetQuarantaDeck(), new FortyStrategy()),
-        //        new Phase(Players, GetQuarantaDeck(), new FourOfAKindStrategy()),
-        //        new Phase(Players, GetQuarantaDeck(), new StraightFlushStrategy()),
-        //        new Phase(Players, GetQuarantaDeck(), new AllDownStrategy())
-        //    };
-        //}
+        public List<Phase> GetPhases() => new List<Phase>
+            {
+                new Phase(new HighPairStrategy(), _pointEvaluatorFactory),
+                new Phase(new TwoPairStrategy(), _pointEvaluatorFactory),
+                new Phase(new ThreeOfAKindStrategy(), _pointEvaluatorFactory),
+                new Phase(new FullHouseStrategy(), _pointEvaluatorFactory),
+                new Phase(new FortyStrategy(), _pointEvaluatorFactory),
+                new Phase(new FourOfAKindStrategy(), _pointEvaluatorFactory),
+                new Phase(new FourOfAKindStrategy(), _pointEvaluatorFactory),
+                new Phase(new StraightFlushStrategy(), _pointEvaluatorFactory),
+                new Phase(new AllDownStrategy(), _pointEvaluatorFactory),
+            };
     }
 }
