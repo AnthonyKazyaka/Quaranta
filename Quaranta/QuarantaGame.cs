@@ -1,6 +1,6 @@
 ﻿using CardGameEngine.Cards;
 using CardGameEngine.Game;
-using Quaranta.Cards;
+using Quaranta.GameLogic.PointEvaluators;
 
 namespace Quaranta
 {
