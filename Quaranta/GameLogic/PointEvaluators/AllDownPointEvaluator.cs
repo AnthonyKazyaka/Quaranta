@@ -1,12 +1,13 @@
 ﻿using CardGameEngine.Cards;
-using CardGameEngine.Game.PointEvaluators;
 using System.Collections.Generic;
 
 namespace Quaranta.GameLogic.PointEvaluators
 {
-    public class AllDownPointEvaluator : IPointEvaluator
+    public class AllDownPointEvaluator : QuarantaPointEvaluator
     {
-        public int EvaluatePoints(List<Card> cards)
+        public override PointEvaluatorType PointEvaluatorType => PointEvaluatorType.AllDown;
+        
+        public override int EvaluatePoints(List<IPlayingCard> cards)
         {
             if (cards.Count == 0)
             {

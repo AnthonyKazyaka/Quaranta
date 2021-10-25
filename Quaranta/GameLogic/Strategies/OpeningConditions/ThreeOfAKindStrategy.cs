@@ -7,7 +7,9 @@ namespace Quaranta.GameLogic.Strategies.OpeningConditions
 {
     public class ThreeOfAKindStrategy : IOpeningConditionStrategy
     {
-        public bool IsOpeningConditionMet(Player player, List<List<Card>> cardGroups)
+        public OpeningConditionType OpeningCondition => OpeningConditionType.ThreeOfAKind;
+
+        public bool IsOpeningConditionMet(Player player, List<List<IPlayingCard>> cardGroups)
         {
             var containsCorrectNumberOfGroups = cardGroups.Count == 1;
             var isValidOpeningThreeOfAKind = cardGroups.All(x => !x.IsJokerPresent() && x.IsSetOfSize(3));

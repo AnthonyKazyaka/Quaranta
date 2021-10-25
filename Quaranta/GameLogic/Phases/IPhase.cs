@@ -7,7 +7,7 @@ namespace Quaranta.GameLogic.Phases
     public interface IPhase
     {
         Dictionary<Player, int> ScoreByPlayer { get; }
-        IOpeningConditionStrategy OpeningCondition { get; }
+        IOpeningConditionStrategy OpeningConditionStrategy { get; }
         void TabulateScore(List<Player> players);
     }
 }

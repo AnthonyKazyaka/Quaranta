@@ -9,7 +9,7 @@ namespace Quaranta.Configuration
     {
         public static void ConfigureQuarantaServices(this IServiceCollection serviceCollection)
         {
-            serviceCollection.AddTransient<IPointEvaluator, PointEvaluator>();
+            serviceCollection.AddTransient<IPointEvaluator, StandardPointEvaluator>();
             serviceCollection.AddTransient<IPointEvaluator, AllDownPointEvaluator>();
             serviceCollection.AddSingleton<IPointEvaluatorFactory, PointEvaluatorFactory>();
 

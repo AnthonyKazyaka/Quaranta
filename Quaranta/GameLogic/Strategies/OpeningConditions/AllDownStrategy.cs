@@ -7,7 +7,9 @@ namespace Quaranta.GameLogic.Strategies.OpeningConditions
 {
     public class AllDownStrategy : IOpeningConditionStrategy
     {
-        public bool IsOpeningConditionMet(Player player, List<List<Card>> cardGroups)
+        public OpeningConditionType OpeningCondition => OpeningConditionType.AllDown;
+
+        public bool IsOpeningConditionMet(Player player, List<List<IPlayingCard>> cardGroups)
         {
             var cardCount = cardGroups.Sum(x => x.Count);
             if (cardCount < 13 || cardCount != player.Hand.Count - 1)

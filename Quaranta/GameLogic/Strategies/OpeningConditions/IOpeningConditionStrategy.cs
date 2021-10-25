@@ -6,6 +6,7 @@ namespace Quaranta.GameLogic.Strategies.OpeningConditions
 {
     public interface IOpeningConditionStrategy
     {
-        bool IsOpeningConditionMet(Player player, List<List<Card>> cardSets);
+        OpeningConditionType OpeningCondition { get; }
+        bool IsOpeningConditionMet(Player player, List<List<IPlayingCard>> cardSets);
     }
 }
