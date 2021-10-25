@@ -13,9 +13,11 @@ namespace Quaranta.GameLogic.PointEvaluators
             _pointEvaluators = pointEvaluators;
         }
 
-        public IPointEvaluator GetPointEvaluator(string evaluatorName)
+        public IPointEvaluator GetPointEvaluator(string evaluatorTypeName)
         {
-            return _pointEvaluators.FirstOrDefault(x => x.GetType().Name == evaluatorName);
+            var quarantaEvaluators = _pointEvaluators.Cast<QuarantaPointEvaluator>();
+            
+            return quarantaEvaluators.FirstOrDefault(x => x.PointEvaluatorType.ToString() == evaluatorTypeName);
         }
     }
 }

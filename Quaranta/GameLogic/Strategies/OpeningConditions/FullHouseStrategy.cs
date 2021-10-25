@@ -7,7 +7,9 @@ namespace Quaranta.GameLogic.Strategies.OpeningConditions
 {
     public class FullHouseStrategy : IOpeningConditionStrategy
     {
-        public bool IsOpeningConditionMet(Player player, List<List<Card>> cardGroups)
+        public OpeningConditionType OpeningCondition => OpeningConditionType.FullHouse;
+
+        public bool IsOpeningConditionMet(Player player, List<List<IPlayingCard>> cardGroups)
         {
             var containsCorrectNumberOfGroups = cardGroups.Count == 2;
             var containsOneOpeningPair = cardGroups.Count(x => !x.IsJokerPresent() && x.IsSetOfSize(2)) == 1;

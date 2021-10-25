@@ -16,9 +16,9 @@ namespace Quaranta.Tests
         {
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Clubs, Rank.Two),
                         new PlayingCard(Suit.Hearts, Rank.Two),
@@ -28,9 +28,9 @@ namespace Quaranta.Tests
 
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Diamonds, Rank.Three),
                         new PlayingCard(Suit.Hearts, Rank.Three),
@@ -40,9 +40,9 @@ namespace Quaranta.Tests
 
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Clubs, Rank.Four),
                         new PlayingCard(Suit.Spades, Rank.Four),
@@ -52,9 +52,9 @@ namespace Quaranta.Tests
 
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Spades, Rank.Five),
                         new PlayingCard(Suit.Diamonds, Rank.Five),
@@ -64,9 +64,9 @@ namespace Quaranta.Tests
 
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Spades, Rank.Six),
                         new PlayingCard(Suit.Diamonds, Rank.Six),
@@ -76,9 +76,9 @@ namespace Quaranta.Tests
 
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Clubs, Rank.Seven),
                         new PlayingCard(Suit.Hearts, Rank.Seven),
@@ -88,9 +88,9 @@ namespace Quaranta.Tests
 
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Diamonds, Rank.Eight),
                         new PlayingCard(Suit.Hearts, Rank.Eight),
@@ -100,9 +100,9 @@ namespace Quaranta.Tests
 
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Clubs, Rank.Nine),
                         new PlayingCard(Suit.Spades, Rank.Nine),
@@ -112,9 +112,9 @@ namespace Quaranta.Tests
 
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Spades, Rank.Ten),
                         new PlayingCard(Suit.Diamonds, Rank.Ten),
@@ -126,9 +126,9 @@ namespace Quaranta.Tests
         {
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Clubs, Rank.Jack),
                         new PlayingCard(Suit.Hearts, Rank.Jack)
@@ -138,9 +138,9 @@ namespace Quaranta.Tests
 
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Diamonds, Rank.Queen),
                         new PlayingCard(Suit.Hearts, Rank.Queen)
@@ -150,9 +150,9 @@ namespace Quaranta.Tests
 
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Clubs, Rank.King),
                         new PlayingCard(Suit.Spades, Rank.King)
@@ -162,9 +162,9 @@ namespace Quaranta.Tests
 
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Spades, Rank.Ace),
                         new PlayingCard(Suit.Diamonds, Rank.Ace)
@@ -176,7 +176,7 @@ namespace Quaranta.Tests
 
         [Theory]
         [MemberData(nameof(OpeningConditionTests.HighPairs))]
-        public void IsHighPair(List<List<Card>> cardGroups)
+        public void IsHighPair(List<List<IPlayingCard>> cardGroups)
         {
             var openingStrategy = new HighPairStrategy();
 
@@ -193,7 +193,7 @@ namespace Quaranta.Tests
         [MemberData(nameof(OpeningConditionTests.FullHouses))]
         [MemberData(nameof(OpeningConditionTests.Forties))]
         [MemberData(nameof(OpeningConditionTests.StraightFlushes))]
-        public void IsNotHighPair(List<List<Card>> cardGroups)
+        public void IsNotHighPair(List<List<IPlayingCard>> cardGroups)
         {
             var openingStrategy = new HighPairStrategy();
 
@@ -207,14 +207,14 @@ namespace Quaranta.Tests
         {
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Clubs, Rank.Jack),
                         new PlayingCard(Suit.Hearts, Rank.Jack),
                     },
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Clubs, Rank.Two),
                         new PlayingCard(Suit.Hearts, Rank.Two)
@@ -224,14 +224,14 @@ namespace Quaranta.Tests
 
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Diamonds, Rank.Queen),
                         new PlayingCard(Suit.Spades, Rank.Queen),
                     },
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Clubs, Rank.Four),
                         new PlayingCard(Suit.Diamonds, Rank.Four)
@@ -241,14 +241,14 @@ namespace Quaranta.Tests
 
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Clubs, Rank.King),
                         new PlayingCard(Suit.Hearts, Rank.King),
                     },
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Spades, Rank.Six),
                         new PlayingCard(Suit.Hearts, Rank.Six)
@@ -258,14 +258,14 @@ namespace Quaranta.Tests
 
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Clubs, Rank.Ace),
                         new PlayingCard(Suit.Hearts, Rank.Ace),
                     },
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Clubs, Rank.Eight),
                         new PlayingCard(Suit.Hearts, Rank.Eight)
@@ -278,14 +278,14 @@ namespace Quaranta.Tests
         {
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Clubs, Rank.Two),
                         new PlayingCard(Suit.Hearts, Rank.Two),
                     },
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Clubs, Rank.Two),
                         new PlayingCard(Suit.Hearts, Rank.Two)
@@ -295,14 +295,14 @@ namespace Quaranta.Tests
 
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Diamonds, Rank.Nine),
                         new PlayingCard(Suit.Spades, Rank.Nine),
                     },
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Clubs, Rank.Four),
                         new PlayingCard(Suit.Diamonds, Rank.Four)
@@ -312,14 +312,14 @@ namespace Quaranta.Tests
 
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Clubs, Rank.Seven),
                         new PlayingCard(Suit.Hearts, Rank.Seven),
                     },
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Spades, Rank.Six),
                         new PlayingCard(Suit.Hearts, Rank.Six)
@@ -329,14 +329,14 @@ namespace Quaranta.Tests
 
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Clubs, Rank.Five),
                         new PlayingCard(Suit.Hearts, Rank.Five),
                     },
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Clubs, Rank.Eight),
                         new PlayingCard(Suit.Hearts, Rank.Eight)
@@ -346,14 +346,14 @@ namespace Quaranta.Tests
 
             yield return new object[]
 {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Clubs, Rank.Three),
                         new PlayingCard(Suit.Hearts, Rank.Three),
                     },
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Clubs, Rank.Ten),
                         new PlayingCard(Suit.Hearts, Rank.Ten)
@@ -364,7 +364,7 @@ namespace Quaranta.Tests
 
         [Theory]
         [MemberData(nameof(OpeningConditionTests.TwoPairs))]
-        public void IsTwoPair(List<List<Card>> cardGroups)
+        public void IsTwoPair(List<List<IPlayingCard>> cardGroups)
         {
             var openingStrategy = new TwoPairStrategy();
 
@@ -381,7 +381,7 @@ namespace Quaranta.Tests
         [MemberData(nameof(OpeningConditionTests.FullHouses))]
         [MemberData(nameof(OpeningConditionTests.Forties))]
         [MemberData(nameof(OpeningConditionTests.StraightFlushes))]
-        public void IsNotTwoPair(List<List<Card>> cardGroups)
+        public void IsNotTwoPair(List<List<IPlayingCard>> cardGroups)
         {
             var openingStrategy = new TwoPairStrategy();
 
@@ -395,9 +395,9 @@ namespace Quaranta.Tests
         {
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Clubs, Rank.Two),
                         new PlayingCard(Suit.Hearts, Rank.Two),
@@ -408,9 +408,9 @@ namespace Quaranta.Tests
 
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Diamonds, Rank.Three),
                         new PlayingCard(Suit.Hearts, Rank.Three),
@@ -421,9 +421,9 @@ namespace Quaranta.Tests
 
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Clubs, Rank.Four),
                         new PlayingCard(Suit.Spades, Rank.Four),
@@ -434,9 +434,9 @@ namespace Quaranta.Tests
 
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Spades, Rank.Five),
                         new PlayingCard(Suit.Diamonds, Rank.Five),
@@ -447,9 +447,9 @@ namespace Quaranta.Tests
 
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Spades, Rank.Six),
                         new PlayingCard(Suit.Diamonds, Rank.Six),
@@ -460,9 +460,9 @@ namespace Quaranta.Tests
 
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Clubs, Rank.Seven),
                         new PlayingCard(Suit.Hearts, Rank.Seven),
@@ -473,9 +473,9 @@ namespace Quaranta.Tests
 
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Diamonds, Rank.Eight),
                         new PlayingCard(Suit.Hearts, Rank.Eight),
@@ -486,9 +486,9 @@ namespace Quaranta.Tests
 
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Clubs, Rank.Nine),
                         new PlayingCard(Suit.Spades, Rank.Nine),
@@ -499,9 +499,9 @@ namespace Quaranta.Tests
 
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Clubs, Rank.Ten),
                         new PlayingCard(Suit.Diamonds, Rank.Ten),
@@ -512,9 +512,9 @@ namespace Quaranta.Tests
 
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Spades, Rank.Jack),
                         new PlayingCard(Suit.Clubs, Rank.Jack),
@@ -525,9 +525,9 @@ namespace Quaranta.Tests
 
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Spades, Rank.Queen),
                         new PlayingCard(Suit.Diamonds, Rank.Queen),
@@ -538,9 +538,9 @@ namespace Quaranta.Tests
 
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Clubs, Rank.King),
                         new PlayingCard(Suit.Diamonds, Rank.King),
@@ -550,9 +550,9 @@ namespace Quaranta.Tests
             };
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Spades, Rank.Ace),
                         new PlayingCard(Suit.Clubs, Rank.Ace),
@@ -564,7 +564,7 @@ namespace Quaranta.Tests
 
         [Theory]
         [MemberData(nameof(OpeningConditionTests.ThreeOfAKinds))]
-        public void IsThreeOfAKind(List<List<Card>> cardGroups)
+        public void IsThreeOfAKind(List<List<IPlayingCard>> cardGroups)
         {
             var openingStrategy = new ThreeOfAKindStrategy();
 
@@ -581,7 +581,7 @@ namespace Quaranta.Tests
         [MemberData(nameof(OpeningConditionTests.FullHouses))]
         [MemberData(nameof(OpeningConditionTests.Forties))]
         [MemberData(nameof(OpeningConditionTests.StraightFlushes))]
-        public void IsNotThreeOfAKind(List<List<Card>> cardGroups)
+        public void IsNotThreeOfAKind(List<List<IPlayingCard>> cardGroups)
         {
             var openingStrategy = new ThreeOfAKindStrategy();
 
@@ -595,15 +595,15 @@ namespace Quaranta.Tests
         {
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Clubs, Rank.Jack),
                         new PlayingCard(Suit.Hearts, Rank.Jack),
                         new PlayingCard(Suit.Diamonds, Rank.Jack)
                     },
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Clubs, Rank.Two),
                         new PlayingCard(Suit.Hearts, Rank.Two)
@@ -613,14 +613,14 @@ namespace Quaranta.Tests
 
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Diamonds, Rank.Queen),
                         new PlayingCard(Suit.Spades, Rank.Queen),
                     },
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Diamonds, Rank.Queen),
                         new PlayingCard(Suit.Spades, Rank.Queen),
@@ -631,15 +631,15 @@ namespace Quaranta.Tests
 
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Clubs, Rank.Four),
                         new PlayingCard(Suit.Diamonds, Rank.Four),
                         new PlayingCard(Suit.Spades, Rank.Four)
                     },
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Spades, Rank.Six),
                         new PlayingCard(Suit.Hearts, Rank.Six)
@@ -649,15 +649,15 @@ namespace Quaranta.Tests
 
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Spades, Rank.Ace),
                         new PlayingCard(Suit.Hearts, Rank.Ace),
                         new PlayingCard(Suit.Diamonds, Rank.Ace)
                     },
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Clubs, Rank.Eight),
                         new PlayingCard(Suit.Hearts, Rank.Eight)
@@ -668,7 +668,7 @@ namespace Quaranta.Tests
 
         [Theory]
         [MemberData(nameof(OpeningConditionTests.FullHouses))]
-        public void IsFullHouse(List<List<Card>> cardGroups)
+        public void IsFullHouse(List<List<IPlayingCard>> cardGroups)
         {
             var openingStrategy = new FullHouseStrategy();
 
@@ -685,7 +685,7 @@ namespace Quaranta.Tests
         [MemberData(nameof(OpeningConditionTests.ThreeOfAKinds))]
         [MemberData(nameof(OpeningConditionTests.Forties))]
         [MemberData(nameof(OpeningConditionTests.StraightFlushes))]
-        public void IsNotFullHouse(List<List<Card>> cardGroups)
+        public void IsNotFullHouse(List<List<IPlayingCard>> cardGroups)
         {
             var openingStrategy = new FullHouseStrategy();
 
@@ -699,15 +699,15 @@ namespace Quaranta.Tests
         {
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Clubs, Rank.Jack),
                         new PlayingCard(Suit.Hearts, Rank.Jack),
                         new PlayingCard(Suit.Diamonds, Rank.Jack)
                     },
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Clubs, Rank.Four),
                         new PlayingCard(Suit.Hearts, Rank.Four),
@@ -718,15 +718,15 @@ namespace Quaranta.Tests
 
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Diamonds, Rank.Ace),
                         new PlayingCard(Suit.Spades, Rank.Ace),
                         new PlayingCard(Suit.Clubs, Rank.Ace)
                     },
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Diamonds, Rank.Queen),
                         new PlayingCard(Suit.Spades, Rank.Queen),
@@ -737,15 +737,15 @@ namespace Quaranta.Tests
 
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Diamonds, Rank.Seven),
                         new PlayingCard(Suit.Spades, Rank.Seven),
                         new PlayingCard(Suit.Clubs, Rank.Seven)
                     },
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Diamonds, Rank.Eight),
                         new PlayingCard(Suit.Spades, Rank.Eight),
@@ -756,16 +756,16 @@ namespace Quaranta.Tests
 
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Clubs, Rank.Four),
                         new PlayingCard(Suit.Diamonds, Rank.Four),
                         new PlayingCard(Suit.Spades, Rank.Four),
                         new PlayingCard(Suit.Hearts, Rank.Four)
                     },
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Spades, Rank.Six),
                         new PlayingCard(Suit.Diamonds, Rank.Six),
@@ -777,23 +777,23 @@ namespace Quaranta.Tests
 
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Spades, Rank.Two),
                         new PlayingCard(Suit.Hearts, Rank.Two),
                         new PlayingCard(Suit.Diamonds, Rank.Two),
                         new PlayingCard(Suit.Clubs, Rank.Two)
                     },
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Clubs, Rank.Four),
                         new PlayingCard(Suit.Diamonds, Rank.Four),
                         new PlayingCard(Suit.Spades, Rank.Four),
                         new PlayingCard(Suit.Hearts, Rank.Four)
                     },
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Clubs, Rank.Four),
                         new PlayingCard(Suit.Diamonds, Rank.Four),
@@ -806,7 +806,7 @@ namespace Quaranta.Tests
 
         [Theory]
         [MemberData(nameof(OpeningConditionTests.Forties))]
-        public void IsForty(List<List<Card>> cardGroups)
+        public void IsForty(List<List<IPlayingCard>> cardGroups)
         {
             var openingStrategy = new FortyStrategy();
 
@@ -824,7 +824,7 @@ namespace Quaranta.Tests
         [MemberData(nameof(OpeningConditionTests.FullHouses))]
         //[MemberData(nameof(OpeningConditionTests.StraightFlushes))] One of the test cases for Straight Flush also meets the Forty condition
         //[MemberData(nameof(OpeningConditionTests.AllDowns))]
-        public void IsNotForty(List<List<Card>> cardGroups)
+        public void IsNotForty(List<List<IPlayingCard>> cardGroups)
         {
             var openingStrategy = new FortyStrategy();
 
@@ -838,9 +838,9 @@ namespace Quaranta.Tests
         {
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Clubs, Rank.Jack),
                         new PlayingCard(Suit.Hearts, Rank.Jack),
@@ -852,9 +852,9 @@ namespace Quaranta.Tests
 
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Diamonds, Rank.Ace),
                         new PlayingCard(Suit.Spades, Rank.Ace),
@@ -866,9 +866,9 @@ namespace Quaranta.Tests
 
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Diamonds, Rank.Seven),
                         new PlayingCard(Suit.Spades, Rank.Seven),
@@ -880,9 +880,9 @@ namespace Quaranta.Tests
 
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Clubs, Rank.Four),
                         new PlayingCard(Suit.Diamonds, Rank.Four),
@@ -894,9 +894,9 @@ namespace Quaranta.Tests
 
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Spades, Rank.Two),
                         new PlayingCard(Suit.Hearts, Rank.Two),
@@ -909,7 +909,7 @@ namespace Quaranta.Tests
 
         [Theory]
         [MemberData(nameof(OpeningConditionTests.FourOfAKinds))]
-        public void IsFourOfAKind(List<List<Card>> cardGroups)
+        public void IsFourOfAKind(List<List<IPlayingCard>> cardGroups)
         {
             var openingStrategy = new FourOfAKindStrategy();
 
@@ -927,7 +927,7 @@ namespace Quaranta.Tests
         [MemberData(nameof(OpeningConditionTests.FullHouses))]
         [MemberData(nameof(OpeningConditionTests.StraightFlushes))]
         [MemberData(nameof(OpeningConditionTests.AllDowns))]
-        public void IsNotFourOfAKind(List<List<Card>> cardGroups)
+        public void IsNotFourOfAKind(List<List<IPlayingCard>> cardGroups)
         {
             var openingStrategy = new FourOfAKindStrategy();
 
@@ -941,9 +941,9 @@ namespace Quaranta.Tests
         {
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Clubs, Rank.Ten),
                         new PlayingCard(Suit.Clubs, Rank.Jack),
@@ -956,9 +956,9 @@ namespace Quaranta.Tests
 
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Hearts, Rank.Two),
                         new PlayingCard(Suit.Hearts, Rank.Three),
@@ -971,9 +971,9 @@ namespace Quaranta.Tests
 
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Spades, Rank.Seven),
                         new PlayingCard(Suit.Spades, Rank.Eight),
@@ -986,9 +986,9 @@ namespace Quaranta.Tests
 
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Diamonds, Rank.Four),
                         new PlayingCard(Suit.Diamonds, Rank.Five),
@@ -1002,7 +1002,7 @@ namespace Quaranta.Tests
 
         [Theory]
         [MemberData(nameof(OpeningConditionTests.StraightFlushes))]
-        public void IsStraightFlush(List<List<Card>> cardGroups)
+        public void IsStraightFlush(List<List<IPlayingCard>> cardGroups)
         {
             var openingStrategy = new StraightFlushStrategy();
 
@@ -1020,7 +1020,7 @@ namespace Quaranta.Tests
         [MemberData(nameof(OpeningConditionTests.FullHouses))]
         //[MemberData(nameof(OpeningConditionTests.Forties))] One of the test cases for Straight Flush also meets the Forty condition
         [MemberData(nameof(OpeningConditionTests.AllDowns))]
-        public void IsNotStraightFlush(List<List<Card>> cardGroups)
+        public void IsNotStraightFlush(List<List<IPlayingCard>> cardGroups)
         {
             var openingStrategy = new StraightFlushStrategy();
 
@@ -1034,9 +1034,9 @@ namespace Quaranta.Tests
         {
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Clubs, Rank.Ten),
                         new PlayingCard(Suit.Clubs, Rank.Jack),
@@ -1044,19 +1044,19 @@ namespace Quaranta.Tests
                         new PlayingCard(Suit.Clubs, Rank.King),
                         new PlayingCard(Suit.Clubs, Rank.Ace)
                     },
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Hearts, Rank.Two),
                         new PlayingCard(Suit.Hearts, Rank.Three),
                         new PlayingCard(Suit.Hearts, Rank.Four)
                     },
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Clubs, Rank.Jack),
                         new PlayingCard(Suit.Hearts, Rank.Jack),
                         new PlayingCard(Suit.Diamonds, Rank.Jack)
                     },
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Clubs, Rank.Four),
                         new PlayingCard(Suit.Hearts, Rank.Four),
@@ -1067,9 +1067,9 @@ namespace Quaranta.Tests
 
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Diamonds, Rank.Four),
                         new PlayingCard(Suit.Diamonds, Rank.Five),
@@ -1077,19 +1077,19 @@ namespace Quaranta.Tests
                         new PlayingCard(Suit.Diamonds, Rank.Seven),
                         new PlayingCard(Suit.Diamonds, Rank.Eight)
                     },
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Spades, Rank.Two),
                         new PlayingCard(Suit.Spades, Rank.Three),
                         new PlayingCard(Suit.Spades, Rank.Four)
                     },
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Clubs, Rank.Four),
                         new PlayingCard(Suit.Hearts, Rank.Four),
                         new PlayingCard(Suit.Diamonds, Rank.Four)
                     },
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Clubs, Rank.Four),
                         new PlayingCard(Suit.Hearts, Rank.Four),
@@ -1100,28 +1100,28 @@ namespace Quaranta.Tests
 
             yield return new object[]
             {
-                new List<List<Card>>
+                new List<List<IPlayingCard>>
                 {
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Diamonds, Rank.Four),
                         new PlayingCard(Suit.Clubs, Rank.Four),
                         new PlayingCard(Suit.Spades, Rank.Four),
                         new PlayingCard(Suit.Hearts, Rank.Four)
                     },
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Spades, Rank.Two),
                         new PlayingCard(Suit.Spades, Rank.Three),
                         new PlayingCard(Suit.Spades, Rank.Four)
                     },
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Clubs, Rank.Four),
                         new PlayingCard(Suit.Hearts, Rank.Four),
                         new PlayingCard(Suit.Diamonds, Rank.Four)
                     },
-                    new List<Card>
+                    new List<IPlayingCard>
                     {
                         new PlayingCard(Suit.Clubs, Rank.Four),
                         new PlayingCard(Suit.Hearts, Rank.Four),
@@ -1133,7 +1133,7 @@ namespace Quaranta.Tests
 
         [Theory]
         [MemberData(nameof(OpeningConditionTests.AllDowns))]
-        public void IsAllDown(List<List<Card>> cardGroups)
+        public void IsAllDown(List<List<IPlayingCard>> cardGroups)
         {
             var openingStrategy = new AllDownStrategy();
 
@@ -1158,7 +1158,7 @@ namespace Quaranta.Tests
         [MemberData(nameof(OpeningConditionTests.FullHouses))]
         [MemberData(nameof(OpeningConditionTests.Forties))]
         [MemberData(nameof(OpeningConditionTests.StraightFlushes))]
-        public void IsNotAllDown(List<List<Card>> cardGroups)
+        public void IsNotAllDown(List<List<IPlayingCard>> cardGroups)
         {
             var openingStrategy = new AllDownStrategy();
 

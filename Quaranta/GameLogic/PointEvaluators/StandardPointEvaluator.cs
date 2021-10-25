@@ -1,16 +1,17 @@
 ﻿using CardGameEngine.Cards;
-using CardGameEngine.Game.PointEvaluators;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace Quaranta.GameLogic.PointEvaluators
 {
-    public class PointEvaluator : IPointEvaluator
+    public class StandardPointEvaluator : QuarantaPointEvaluator
     {
-        public int EvaluatePoints(List<Card> cards)
+        public override PointEvaluatorType PointEvaluatorType => PointEvaluatorType.Standard;
+
+        public override int EvaluatePoints(List<IPlayingCard> cards)
         {
             int pointValue = 0;
-            var playingCards = cards.Where(x => !(x is Joker)).Cast<IPlayingCard>().ToList();
+            var playingCards = cards.Where(x => !(x is Joker));
 
             int aceCount = playingCards.Count(x => x.Rank == Rank.Ace);
             bool multipleAces = aceCount > 1;

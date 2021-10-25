@@ -7,7 +7,9 @@ namespace Quaranta.GameLogic.Strategies.OpeningConditions
 {
     public class FourOfAKindStrategy : IOpeningConditionStrategy
     {
-        public bool IsOpeningConditionMet(Player player, List<List<Card>> cardGroups)
+        public OpeningConditionType OpeningCondition => OpeningConditionType.FourOfAKind;
+        
+        public bool IsOpeningConditionMet(Player player, List<List<IPlayingCard>> cardGroups)
         {
             var containsCorrectNumberOfGroups = cardGroups.Count == 1;
             var isValidOpeningFourOfAKind = cardGroups.All(x => !x.IsJokerPresent() && x.IsSetOfSize(4));
