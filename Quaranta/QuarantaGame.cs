@@ -1,39 +1,30 @@
 ﻿using CardGameEngine.Game.PointEvaluators;
-using CardGameEngine.Players;
 using Quaranta.GameLogic.Phases;
 using Quaranta.GameLogic.PointEvaluators;
 using Quaranta.GameLogic.Strategies.OpeningConditions;
-using System;
 using System.Collections.Generic;
 
 namespace Quaranta
 {
     public class QuarantaGame : IQuarantaGame
     {
-        public List<Player> Players { get; }
+        public List<QuarantaPlayer> Players { get; }
         public List<Phase> Phases { get; }
-        private readonly IPointEvaluatorFactory _pointEvaluatorFactory;
 
-        public QuarantaGame(List<Player> players, IPointEvaluatorFactory pointEvaluatorFactory)
+        public QuarantaGame(List<QuarantaPlayer> players, IPointEvaluatorFactory pointEvaluatorFactory)
         {
             Players = players;
-            
+
             Phases = GetPhases();
-            _pointEvaluatorFactory = pointEvaluatorFactory;
-            
-            SetPlayers();
-            SetPointEvaluationLogic();
-        }
-
-        public void SetPointEvaluationLogic()
-        {
-            throw new NotImplementedException();
-        }
-
-        public void SetPlayers()
-        {
-            // TODO: Figure out QuarantaPlayer creation
-            throw new NotImplementedException();
+            foreach (var phase in Phases)
+            {
+                phase.SetPlayers(players);
+                
+                var pointEvaluatorType = phase.OpeningConditionStrategy.OpeningCondition != OpeningConditionType.AllDown
+                    ? PointEvaluatorType.AllDown 
+                    : PointEvaluatorType.Standard;
+                phase.SetupPointEvaluationLogic(pointEvaluatorFactory, pointEvaluatorType);
+            }
         }
 
         //public QuarantaGame(List<IPhases>IPointEvaluator pointEvaluator)
@@ -48,7 +39,7 @@ namespace Quaranta
 
         public void Play()
         {
-            foreach(var phase in Phases)
+            foreach (var phase in Phases)
             {
                 // Once phase begins, it's responsible for the card logic until a player goes out
                 phase.Begin();
@@ -70,5 +61,13 @@ namespace Quaranta
                 new Phase(new StraightFlushStrategy()),
                 new Phase(new AllDownStrategy()),
             };
-    }
+
+        private PointEvaluatorType GetPointEvaluatorType(Phase phase) =>
+            phase.OpeningConditionStrategy.OpeningCondition switch
+            {
+                OpeningConditionType.AllDown => PointEvaluatorType.AllDown,
+                _ => PointEvaluatorType.Standard
+            };
+
+}
 }
