@@ -32,6 +32,7 @@ namespace Quaranta
 
         public void SetPlayers()
         {
+            // TODO: Figure out QuarantaPlayer creation
             throw new NotImplementedException();
         }
 
@@ -49,21 +50,25 @@ namespace Quaranta
         {
             foreach(var phase in Phases)
             {
+                // Once phase begins, it's responsible for the card logic until a player goes out
                 phase.Begin();
+
+                // Once a player goes out, tabulate score for all players
+                phase.TabulateScore();
             }
         }
 
         public List<Phase> GetPhases() => new List<Phase>
             {
-                new Phase(new HighPairStrategy(), _pointEvaluatorFactory, PointEvaluatorType.Standard, PointEvaluatorType.Standard),
-                new Phase(new TwoPairStrategy(), _pointEvaluatorFactory, PointEvaluatorType.Standard),
-                new Phase(new ThreeOfAKindStrategy(), _pointEvaluatorFactory, PointEvaluatorType.Standard),
-                new Phase(new FullHouseStrategy(), _pointEvaluatorFactory, PointEvaluatorType.Standard),
-                new Phase(new FortyStrategy(), _pointEvaluatorFactory, PointEvaluatorType.Standard),
-                new Phase(new FourOfAKindStrategy(), _pointEvaluatorFactory, PointEvaluatorType.Standard),
-                new Phase(new FourOfAKindStrategy(), _pointEvaluatorFactory, PointEvaluatorType.Standard),
-                new Phase(new StraightFlushStrategy(), _pointEvaluatorFactory, PointEvaluatorType.Standard),
-                new Phase(new AllDownStrategy(), _pointEvaluatorFactory, PointEvaluatorType.AllDown),
+                new Phase(new HighPairStrategy()),
+                new Phase(new TwoPairStrategy()),
+                new Phase(new ThreeOfAKindStrategy()),
+                new Phase(new FullHouseStrategy()),
+                new Phase(new FortyStrategy()),
+                new Phase(new FourOfAKindStrategy()),
+                new Phase(new FourOfAKindStrategy()),
+                new Phase(new StraightFlushStrategy()),
+                new Phase(new AllDownStrategy()),
             };
     }
 }

@@ -1,6 +1,5 @@
 ﻿using CardGameEngine.Cards;
 using CardGameEngine.Game.PointEvaluators;
-using CardGameEngine.Players;
 using Quaranta.GameLogic.PointEvaluators;
 using Quaranta.GameLogic.Strategies.OpeningConditions;
 using System.Collections.Generic;
@@ -10,12 +9,10 @@ namespace Quaranta.GameLogic.Phases
 {
     public class Phase : IPhase
     {
-        public List<Player> Players { get; private set; }
-        public Dictionary<Player, int> ScoreByPlayer { get; }
+        public List<QuarantaPlayer> Players { get; private set; }
+        public Dictionary<QuarantaPlayer, int> ScoreByPlayer { get; }
         public List<List<IPlayingCard>> DownCardGroups { get; set; }
-        public IOpeningConditionStrategy OpeningConditionStrategy { get; private set; }
-        public PointEvaluatorType PointEvaluatorType { get; set; }
-                
+        public IOpeningConditionStrategy OpeningConditionStrategy { get; private set; }                
         private IPointEvaluator _pointEvaluator;
         
         public Phase(IOpeningConditionStrategy openingCondition)
@@ -30,22 +27,19 @@ namespace Quaranta.GameLogic.Phases
 
         // Play the round in turn order
         public void Begin()
-        {          
+        {
             // Has anyone gone out?
-            while(!IsFinished())
+            while (!IsFinished())
             {
-                foreach(var player in Players)
+                foreach (var player in Players)
                 {
                     // Play a card
-                    var card = player.();
+                    //var card = player.TakeTurn();
 
                     // Add the card to the down card group
-                    DownCardGroups[player.Id].Add(card);
+                    // DownCardGroups[player.Id].Add(card);
                 }
             }
-
-            TabulateScore();
-
         }
 
         public bool IsFinished()
@@ -61,7 +55,7 @@ namespace Quaranta.GameLogic.Phases
             }
         }
 
-        public void SetPlayers(List<Player> players)
+        public void SetPlayers(List<QuarantaPlayer> players)
         {
             Players = players;
         }
