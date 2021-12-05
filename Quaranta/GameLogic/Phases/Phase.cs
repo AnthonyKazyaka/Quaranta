@@ -1,4 +1,5 @@
 ﻿using CardGameEngine.Cards;
+using CardGameEngine.Decks;
 using CardGameEngine.Game.PointEvaluators;
 using Quaranta.GameLogic.PointEvaluators;
 using Quaranta.GameLogic.Strategies.OpeningConditions;
@@ -12,6 +13,8 @@ namespace Quaranta.GameLogic.Phases
         public List<QuarantaPlayer> Players { get; private set; }
         public Dictionary<QuarantaPlayer, int> ScoreByPlayer { get; }
         public List<List<IPlayingCard>> DownCardGroups { get; set; }
+        public Stack<IPlayingCard> DiscardPile { get; private set; }
+        public Deck Deck { get; private set; }
         public IOpeningConditionStrategy OpeningConditionStrategy { get; private set; }                
         private IPointEvaluator _pointEvaluator;
         
@@ -34,8 +37,9 @@ namespace Quaranta.GameLogic.Phases
                 foreach (var player in Players)
                 {
                     // Play a card
-                    //var card = player.TakeTurn();
+                    var discard = player.TakeTurnAndDiscard(this);
 
+                    DiscardPile.Push(discard);
                     // Add the card to the down card group
                     // DownCardGroups[player.Id].Add(card);
                 }

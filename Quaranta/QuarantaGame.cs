@@ -68,6 +68,5 @@ namespace Quaranta
                 OpeningConditionType.AllDown => PointEvaluatorType.AllDown,
                 _ => PointEvaluatorType.Standard
             };
-
-}
+    }
 }
