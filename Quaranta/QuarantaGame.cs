@@ -49,7 +49,7 @@ namespace Quaranta
             }
         }
 
-        public List<Phase> GetPhases() => new List<Phase>
+        public virtual List<Phase> GetPhases() => new List<Phase>
             {
                 new Phase(new HighPairStrategy()),
                 new Phase(new TwoPairStrategy()),
@@ -62,7 +62,7 @@ namespace Quaranta
                 new Phase(new AllDownStrategy()),
             };
 
-        private PointEvaluatorType GetPointEvaluatorType(Phase phase) =>
+        protected virtual PointEvaluatorType GetPointEvaluatorType(Phase phase) =>
             phase.OpeningConditionStrategy.OpeningCondition switch
             {
                 OpeningConditionType.AllDown => PointEvaluatorType.AllDown,

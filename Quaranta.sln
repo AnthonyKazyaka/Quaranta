@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.30320.27
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31919.166
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Quaranta", "Quaranta\Quaranta.csproj", "{912D0E25-620F-4625-8418-6FD3BBD117E5}"
 EndProject
@@ -10,6 +10,8 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{9E397EB5-9E32-4014-872A-1D1B644A62C7}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Quaranta.Tests", "Tests\Quaranta.Tests\Quaranta.Tests.csproj", "{18D72B65-5558-452B-A6FF-D47F61086028}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleQuaranta", "ConsoleQuaranta\ConsoleQuaranta.csproj", "{B382CCB2-BAA1-4690-ACA5-8E02D8F68944}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -29,6 +31,10 @@ Global
 		{18D72B65-5558-452B-A6FF-D47F61086028}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{18D72B65-5558-452B-A6FF-D47F61086028}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{18D72B65-5558-452B-A6FF-D47F61086028}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B382CCB2-BAA1-4690-ACA5-8E02D8F68944}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B382CCB2-BAA1-4690-ACA5-8E02D8F68944}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B382CCB2-BAA1-4690-ACA5-8E02D8F68944}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B382CCB2-BAA1-4690-ACA5-8E02D8F68944}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
