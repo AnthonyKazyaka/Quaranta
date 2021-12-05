@@ -37,7 +37,7 @@ namespace Quaranta
 
         //private Deck GetQuarantaDeck() => Deck.GenerateExtendedDeck();
 
-        public void Play()
+        public override void Play()
         {
             foreach (var phase in Phases)
             {
