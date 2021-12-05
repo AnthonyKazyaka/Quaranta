@@ -1,43 +1,67 @@
 ﻿using CardGameEngine.Cards;
+using CardGameEngine.Decks;
 using CardGameEngine.Game.PointEvaluators;
-using CardGameEngine.Players;
 using Quaranta.GameLogic.PointEvaluators;
 using Quaranta.GameLogic.Strategies.OpeningConditions;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Quaranta.GameLogic.Phases
 {
     public class Phase : IPhase
     {
-        public Dictionary<Player, int> ScoreByPlayer { get; }
+        public List<QuarantaPlayer> Players { get; private set; }
+        public Dictionary<QuarantaPlayer, int> ScoreByPlayer { get; }
         public List<List<IPlayingCard>> DownCardGroups { get; set; }
-        public IOpeningConditionStrategy OpeningConditionStrategy { get; private set; }
-
-        private readonly IPointEvaluatorFactory _pointEvaluatorFactory;
+        public Stack<IPlayingCard> DiscardPile { get; private set; }
+        public Deck Deck { get; private set; }
+        public IOpeningConditionStrategy OpeningConditionStrategy { get; private set; }                
+        private IPointEvaluator _pointEvaluator;
         
-        public Phase(IOpeningConditionStrategy openingCondition, IPointEvaluatorFactory pointEvaluatorFactory)
+        public Phase(IOpeningConditionStrategy openingCondition)
         {
             OpeningConditionStrategy = openingCondition;
-
-            _pointEvaluatorFactory = pointEvaluatorFactory;
         }
 
-        public void TabulateScore(List<Player> players)
+        public void SetupPointEvaluationLogic(IPointEvaluatorFactory pointEvaluatorFactory, PointEvaluatorType pointEvaluatorType)
         {
-            IPointEvaluator pointEvaluator;
-            if(OpeningConditionStrategy.OpeningCondition == OpeningConditionType.AllDown)
-            {
-                pointEvaluator = _pointEvaluatorFactory.GetPointEvaluator(PointEvaluatorType.AllDown.ToString());
-            }
-            else
-            {
-                pointEvaluator = _pointEvaluatorFactory.GetPointEvaluator(PointEvaluatorType.Standard.ToString());
-            }
+            _pointEvaluator = pointEvaluatorFactory.GetPointEvaluator(pointEvaluatorType.ToString());
+        }
 
-            foreach (var player in players)
+        // Play the round in turn order
+        public void Begin()
+        {
+            // Has anyone gone out?
+            while (!IsFinished())
             {
-                ScoreByPlayer.Add(player, pointEvaluator.EvaluatePoints(player.Hand));
+                foreach (var player in Players)
+                {
+                    // Play a card
+                    var discard = player.TakeTurnAndDiscard(this);
+
+                    DiscardPile.Push(discard);
+                    // Add the card to the down card group
+                    // DownCardGroups[player.Id].Add(card);
+                }
             }
+        }
+
+        public bool IsFinished()
+        {
+            return Players.Any(player => player.Hand.Count == 0);
+        }
+
+        public void TabulateScore()
+        {
+            foreach (var player in Players)
+            {
+                ScoreByPlayer.Add(player, _pointEvaluator.EvaluatePoints(player.Hand));
+            }
+        }
+
+        public void SetPlayers(List<QuarantaPlayer> players)
+        {
+            Players = players;
         }
     }
 }
