@@ -9,6 +9,6 @@ namespace Quaranta.GameLogic.Phases
         Dictionary<QuarantaPlayer, int> ScoreByPlayer { get; }
         IOpeningConditionStrategy OpeningConditionStrategy { get; }
         void SetPlayers(List<QuarantaPlayer> players);
-        void Begin();
+        void Start();
     }
 }

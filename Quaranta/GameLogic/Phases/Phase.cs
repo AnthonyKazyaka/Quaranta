@@ -29,7 +29,7 @@ namespace Quaranta.GameLogic.Phases
         }
 
         // Play the round in turn order
-        public void Begin()
+        public void Start()
         {
             // Has anyone gone out?
             while (!IsFinished())
@@ -48,7 +48,7 @@ namespace Quaranta.GameLogic.Phases
 
         public bool IsFinished()
         {
-            return Players.Any(player => player.Hand.Count == 0);
+            return Players.Count == 0 || Players.Any(player => player.Hand.Count == 0);
         }
 
         public void TabulateScore()

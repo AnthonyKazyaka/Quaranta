@@ -20,29 +20,19 @@ namespace Quaranta
             {
                 phase.SetPlayers(players);
                 
-                var pointEvaluatorType = phase.OpeningConditionStrategy.OpeningCondition != OpeningConditionType.AllDown
+                var pointEvaluatorType = phase.OpeningConditionStrategy.OpeningCondition == OpeningConditionType.AllDown
                     ? PointEvaluatorType.AllDown 
                     : PointEvaluatorType.Standard;
                 phase.SetupPointEvaluationLogic(pointEvaluatorFactory, pointEvaluatorType);
             }
         }
 
-        //public QuarantaGame(List<IPhases>IPointEvaluator pointEvaluator)
-        //{
-
-        //}
-        //public QuarantaGame(int numberOfPlayers) : base(numberOfPlayers) { }
-
-        //public QuarantaGame(List<Player> players) : base(players) { }
-
-        //private Deck GetQuarantaDeck() => Deck.GenerateExtendedDeck();
-
-        public override void Play()
+        public virtual void Play()
         {
             foreach (var phase in Phases)
             {
                 // Once phase begins, it's responsible for the card logic until a player goes out
-                phase.Begin();
+                phase.Start();
 
                 // Once a player goes out, tabulate score for all players
                 phase.TabulateScore();
@@ -56,7 +46,6 @@ namespace Quaranta
                 new Phase(new ThreeOfAKindStrategy()),
                 new Phase(new FullHouseStrategy()),
                 new Phase(new FortyStrategy()),
-                new Phase(new FourOfAKindStrategy()),
                 new Phase(new FourOfAKindStrategy()),
                 new Phase(new StraightFlushStrategy()),
                 new Phase(new AllDownStrategy()),

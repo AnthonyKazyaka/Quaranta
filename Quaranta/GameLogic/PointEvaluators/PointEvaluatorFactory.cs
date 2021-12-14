@@ -8,9 +8,9 @@ namespace Quaranta.GameLogic.PointEvaluators
     {
         private readonly List<IPointEvaluator> _pointEvaluators;
 
-        public PointEvaluatorFactory(List<IPointEvaluator> pointEvaluators)
+        public PointEvaluatorFactory(IEnumerable<IPointEvaluator> pointEvaluators)
         {
-            _pointEvaluators = pointEvaluators;
+            _pointEvaluators = pointEvaluators.ToList();
         }
 
         public IPointEvaluator GetPointEvaluator(string evaluatorTypeName)
