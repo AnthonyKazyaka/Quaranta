@@ -1,5 +1,7 @@
-﻿using CardGameEngine.Game.PointEvaluators;
+﻿using CardGameEngine.Decks;
+using CardGameEngine.Game.PointEvaluators;
 using Quaranta.GameLogic.Phases;
+using Quaranta.GameLogic.Players;
 using Quaranta.GameLogic.PointEvaluators;
 using Quaranta.GameLogic.Strategies.OpeningConditions;
 using System.Collections.Generic;
@@ -9,13 +11,19 @@ namespace Quaranta
     public class QuarantaGame : IQuarantaGame
     {
         public List<QuarantaPlayer> Players { get; }
+        public QuarantaPlayer Dealer => GetDealer();
         public List<Phase> Phases { get; }
+        public Phase CurrentPhase { get; private set; }
 
-        public QuarantaGame(List<QuarantaPlayer> players, IPointEvaluatorFactory pointEvaluatorFactory)
+        private readonly IDeckFactory _deckFactory;
+
+        public QuarantaGame(List<QuarantaPlayer> players, IPointEvaluatorFactory pointEvaluatorFactory, IDeckFactory deckFactory)
         {
             Players = players;
-
+            _deckFactory = deckFactory;
+            
             Phases = GetPhases();
+
             foreach (var phase in Phases)
             {
                 phase.SetPlayers(players);
@@ -29,8 +37,12 @@ namespace Quaranta
 
         public virtual void Play()
         {
+            Players.ForEach(p => p.Reset());
+
             foreach (var phase in Phases)
             {
+                CurrentPhase = phase;
+
                 // Once phase begins, it's responsible for the card logic until a player goes out
                 phase.Start();
 
@@ -39,16 +51,16 @@ namespace Quaranta
             }
         }
 
-        public virtual List<Phase> GetPhases() => new List<Phase>
-            {
-                new Phase(new HighPairStrategy()),
-                new Phase(new TwoPairStrategy()),
-                new Phase(new ThreeOfAKindStrategy()),
-                new Phase(new FullHouseStrategy()),
-                new Phase(new FortyStrategy()),
-                new Phase(new FourOfAKindStrategy()),
-                new Phase(new StraightFlushStrategy()),
-                new Phase(new AllDownStrategy()),
+        public virtual List<Phase> GetPhases() => new()
+        {
+                new Phase(new HighPairStrategy(), _deckFactory),
+                new Phase(new TwoPairStrategy(), _deckFactory),
+                new Phase(new ThreeOfAKindStrategy(), _deckFactory),
+                new Phase(new FullHouseStrategy(), _deckFactory),
+                new Phase(new FortyStrategy(), _deckFactory),
+                new Phase(new FourOfAKindStrategy(), _deckFactory),
+                new Phase(new StraightFlushStrategy(), _deckFactory),
+                new Phase(new AllDownStrategy(), _deckFactory),
             };
 
         protected virtual PointEvaluatorType GetPointEvaluatorType(Phase phase) =>
@@ -57,5 +69,16 @@ namespace Quaranta
                 OpeningConditionType.AllDown => PointEvaluatorType.AllDown,
                 _ => PointEvaluatorType.Standard
             };
+
+        public QuarantaPlayer GetDealer()
+        {
+            var phaseNumber = Phases.IndexOf(CurrentPhase);
+            if (phaseNumber == -1)
+            {
+                return null;
+            }
+
+            return Players[phaseNumber % 4];
+        }
     }
 }

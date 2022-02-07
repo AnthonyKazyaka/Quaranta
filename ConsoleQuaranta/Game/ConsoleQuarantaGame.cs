@@ -1,11 +1,13 @@
-﻿using CardGameEngine.Game.PointEvaluators;
+﻿using CardGameEngine.Decks;
+using CardGameEngine.Game.PointEvaluators;
 using Quaranta;
+using Quaranta.GameLogic.Players;
 
 namespace ConsoleQuaranta.Game
 {
     public  class ConsoleQuarantaGame : QuarantaGame
     {
-        public ConsoleQuarantaGame(List<QuarantaPlayer> players, IPointEvaluatorFactory pointEvaluatorFactory) : base(players, pointEvaluatorFactory)
+        public ConsoleQuarantaGame(List<QuarantaPlayer> players, IPointEvaluatorFactory pointEvaluatorFactory, IDeckFactory deckFactory) : base(players, pointEvaluatorFactory, deckFactory)
         {
 
         }

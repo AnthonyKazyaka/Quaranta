@@ -1,9 +1,10 @@
-﻿using CardGameEngine.Game;
+﻿using CardGameEngine.Decks;
+using CardGameEngine.Game.PointEvaluators;
 using ConsoleQuaranta.Extensions;
 using ConsoleQuaranta.Game;
+using ConsoleQuaranta.Player;
 using Microsoft.Extensions.DependencyInjection;
-using Quaranta;
-using CardGameEngine.Game.PointEvaluators;
+using Quaranta.GameLogic.Players;
 using Quaranta.GameLogic.PointEvaluators;
 
 namespace ConsoleQuaranta
@@ -16,22 +17,33 @@ namespace ConsoleQuaranta
             serviceCollection.AddConsoleQuarantaServices();
 
             var serviceProvider = serviceCollection.BuildServiceProvider();
-            var pointEvaluatorFactory = serviceProvider.GetService<IPointEvaluatorFactory>();
+            var pointEvaluatorFactory = serviceProvider.GetService<IPointEvaluatorFactory>()
+                ?? new PointEvaluatorFactory(
+                    new List<IPointEvaluator>
+                    {
+                        new StandardPointEvaluator(),
+                        new AllDownPointEvaluator()
+                    });
 
-            var quarantaGame = new ConsoleQuarantaGame(
-                new List<QuarantaPlayer>
-                {
+            var players = GetPlayers();
 
-                },
-                pointEvaluatorFactory// ?? (IPointEvaluatorFactory)new PointEvaluatorFactory()
-            );
+            var deckFactory = serviceProvider.GetService<IDeckFactory>() ?? new DeckFactory(new IDeckGenerator[] { new StandardDeckGenerator(), new ExtendedDeckGenerator() });
 
-            if(quarantaGame != null)
+            var quarantaGame = new ConsoleQuarantaGame(players, pointEvaluatorFactory, deckFactory);
+
+            if (quarantaGame != null)
             {
                 quarantaGame.Play();
             }
         }
 
-        
+        private static List<QuarantaPlayer> GetPlayers() =>
+            new()
+            {
+                new ConsoleQuarantaPlayer("Anthony"),
+                new VirtualQuarantaPlayer("Erin"),
+                new VirtualQuarantaPlayer("EJ"),
+                new VirtualQuarantaPlayer("Eryn")
+            };
     }
 }

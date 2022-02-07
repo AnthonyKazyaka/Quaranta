@@ -4,13 +4,16 @@ using Quaranta.GameLogic.Phases;
 using System;
 using System.Collections.Generic;
 
-namespace Quaranta
+namespace Quaranta.GameLogic.Players
 {
-    public class QuarantaPlayer : Player
+    public abstract class QuarantaPlayer : Player
     {
         public Guid PlayerId { get; } = Guid.NewGuid();
-        public string Name { get; set; }
         public bool IsOpen { get; set; } = false;
+
+        public QuarantaPlayer(string name) : base(name)
+        {
+        }
 
         public virtual IPlayingCard TakeTurnAndDiscard(Phase currentPhase)
         {
@@ -29,13 +32,13 @@ namespace Quaranta
             // If player is not already open, can Player open with any cards in their hand?
             // if(!IsOpen && CanOpen())) // TODO: Implement opening card selection and game condition logic
             // {
-                // Play opening cards
-                // PlayCards();
-                // return ChooseDiscard();
+            // Play opening cards
+            // PlayCards();
+            // return ChooseDiscard();
             // }
             // else
             // {
-                // 
+            // 
 
 
 
@@ -51,14 +54,8 @@ namespace Quaranta
         protected virtual void PlayCards(List<IPlayingCard> cards)//, TargetPile pile (?)
             => cards.ForEach(PlayCard);
 
-        protected virtual IPlayingCard ChooseDiscard()
-        {
-            throw new NotImplementedException();
-        }
+        protected abstract IPlayingCard ChooseDiscard();
 
-        protected virtual void PickupCard()
-        {
-
-        }
+        protected abstract void PickupCard();
     }
 }
