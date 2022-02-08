@@ -3,6 +3,7 @@ using CardGameEngine.Players;
 using Quaranta.GameLogic.Phases;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Quaranta.GameLogic.Players
 {
@@ -40,9 +41,21 @@ namespace Quaranta.GameLogic.Players
             // {
             // 
 
-
-
-            return ChooseDiscard();
+            while (true)
+            {
+                var chosenCard = ChooseDiscard();
+                if (currentPhase.IsDiscardValid(chosenCard))
+                {
+                    var matchingCardFromHand = Hand.FirstOrDefault(x => (x is Joker && chosenCard is Joker) || (x.Rank == chosenCard.Rank && x.Suit == chosenCard.Suit));
+                    if (matchingCardFromHand != null)
+                    {
+                        Hand.Remove(matchingCardFromHand);
+                        return chosenCard;
+                    }
+                }
+                
+                Console.WriteLine("That card can't be discarded at this time. Please select another card.");
+            }
         }
 
         // Maybe if no target down card group (pile?) is provided, new group is created

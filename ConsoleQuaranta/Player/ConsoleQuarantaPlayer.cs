@@ -7,31 +7,34 @@ namespace ConsoleQuaranta.Player
 {
     public class ConsoleQuarantaPlayer : QuarantaPlayer
     {
+        private Phase _phase; // It's helpful to keep this
+
         public ConsoleQuarantaPlayer(string name) : base(name)
         {
         }
 
         public override IPlayingCard TakeTurnAndDiscard(Phase currentPhase)
         {
-            Console.WriteLine($"{Name}'s turn. Everybody else look away lol");
-            Console.WriteLine($"Your current hand: {ToConsoleString(Hand)}");
-            Console.WriteLine($"Current down card piles: ({string.Join("), (", currentPhase.DownCardGroups.Select(x => ToConsoleString(x)))})");
+            _phase = currentPhase;
+
+            Console.WriteLine("Input your discard. Max of 2 numbers (10) and min of 1 (also J,Q,K,A).");
+            Console.WriteLine("Suits are [H]earts, [D]iamonds, [S]pades, [C]lubs (i.e. H,D,S,C). J* is used for Jokers.");
+            Console.WriteLine("Examples: H7 is parsed as a 7 of Hearts, 8C is the 8 of Clubs, SA is the Ace of Spades (but so is AS), etc.)");
+            Console.WriteLine();
 
             return base.TakeTurnAndDiscard(currentPhase);
         }
 
         protected virtual string ToConsoleString(IEnumerable<IPlayingCard> cards) => string.Join(", ", cards.ToList().Select(x => x.ToString()));
 
-        private IPlayingCard GetCardFromConsoleInput()
+        protected IPlayingCard GetCardFromConsoleInput()
         {
-            Console.WriteLine("Input your discard. Max of 2 numbers (10) and min of 1 (also J,Q,K,A).");
-            Console.WriteLine("Suits are [H]earts, [D]iamonds, [S]pades, [C]lubs (i.e. H,D,S,C). J* is used for Jokers.");
-            Console.WriteLine("Examples: H7 is parsed as a 7 of Hearts, 8C is the 8 of Clubs, SA is the Ace of Spades (but so is AS), etc.)");
-
             while (true)
             {
                 try
                 {
+                    Console.WriteLine($"Current down card piles: ({string.Join("), (", _phase.DownCardGroups.Select(x => ToConsoleString(x)))})");
+                    Console.WriteLine($"Your current hand: {ToConsoleString(Hand)}");
                     string? input = GetTrimmedInput(GetConsoleInput());
 
                     if (string.IsNullOrWhiteSpace(input) || input.Length < 2 || input.Length > 3)
@@ -52,13 +55,14 @@ namespace ConsoleQuaranta.Player
                 catch (ArgumentOutOfRangeException)
                 {
                     Console.WriteLine("That is not a valid input, please try again.");
+                    Console.WriteLine(Environment.NewLine);
                     continue;
                 }
             }
         }
 
         //Find the number in the input string and return it as a rank between 1 and 10
-        private Rank GetRankFromInputString(string input)
+        protected Rank GetRankFromInputString(string input)
         {
             var match = Regex.Match(input, "\\d+");
             if (match.Success)
@@ -78,7 +82,7 @@ namespace ConsoleQuaranta.Player
             };
         }
 
-        private Suit GetSuitFromInputString(string input)
+        protected Suit GetSuitFromInputString(string input)
         {
             var match = Regex.Match(input, "[HDSC]");
             if (match.Success)
@@ -87,8 +91,8 @@ namespace ConsoleQuaranta.Player
                 {
                     "H" => Suit.Hearts,
                     "D" => Suit.Diamonds,
-                    "C" => Suit.Spades,
-                    "S" => Suit.Clubs,
+                    "C" => Suit.Clubs,
+                    "S" => Suit.Spades,
                     _ => throw new NotImplementedException()
                 };
             }
@@ -96,9 +100,9 @@ namespace ConsoleQuaranta.Player
             throw new ArgumentOutOfRangeException();
         }
 
-        private string GetConsoleInput() => Console.ReadLine()?.ToUpper() ?? string.Empty;
+        protected string GetConsoleInput() => Console.ReadLine()?.ToUpper() ?? string.Empty;
 
-        private string GetTrimmedInput(string input) => (input ?? string.Empty).Trim().Replace(" ", string.Empty);
+        protected string GetTrimmedInput(string input) => (input ?? string.Empty).Trim().Replace(" ", string.Empty);
 
         protected override IPlayingCard ChooseDiscard()
         {
@@ -107,11 +111,13 @@ namespace ConsoleQuaranta.Player
                 var chosenCard = GetCardFromConsoleInput();
 
                 // Check if the card is in the hand
-                if (chosenCard != null && Hand.Contains(chosenCard))
+                var matchingCardFromHand = Hand.FirstOrDefault(x => (x is Joker && chosenCard is Joker) || (x.Rank == chosenCard.Rank && x.Suit == chosenCard.Suit));
+                if (matchingCardFromHand != null)
                 {
-                    Hand.Remove(chosenCard);
                     return chosenCard;
                 }
+
+                Console.WriteLine("That card isn't in your hand. Please select another card.");
             }            
         }
 

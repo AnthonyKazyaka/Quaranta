@@ -49,11 +49,19 @@ namespace Quaranta.GameLogic.Phases
             {
                 foreach (var player in Players)
                 {
+                    Console.WriteLine("~~~~~~");
+                    Console.WriteLine($"{player.Name}'s turn. Everybody else look away lol");
+
                     // Play a card
                     var discard = player.TakeTurnAndDiscard(this);
 
+                    Console.WriteLine($"{player.Name} discarded a _ {discard}_ ");
+                    Console.WriteLine($"{player.Name} has {player.Hand.Count} card{(player.Hand.Count == 1 ? string.Empty : "s")} remaining");
+
                     // Add the card to the down card group
                     DiscardPile.Push(discard);
+                    Console.WriteLine("~~~~~~");
+                    Console.WriteLine();
                 }
             }
         }
@@ -76,7 +84,7 @@ namespace Quaranta.GameLogic.Phases
             Players = players;
         }
 
-        private void DealCards()
+        protected void DealCards()
         {
             Players.ForEach(player => player.ResetHand());
 
@@ -89,6 +97,59 @@ namespace Quaranta.GameLogic.Phases
 
                 player.AddCard(card);
             }
+        }
+
+        public virtual bool IsDiscardValid(IPlayingCard playingCard)
+        {
+            if(playingCard == null)
+            {
+                return false;
+            }
+
+            if(playingCard is Joker)
+            {
+                return true;
+            }
+
+            var currentPhaseCondition = OpeningConditionStrategy.OpeningCondition;
+            if(currentPhaseCondition == OpeningConditionType.HighPair || currentPhaseCondition == OpeningConditionType.TwoPair)
+            {
+                // Players aren't allowed to discard high cards during the first 2 rounds if somebody has not opened yet
+                if(Players.Any(x=>!x.IsOpen))
+                {
+                    return playingCard.Rank != Rank.Ace && playingCard.Rank <= Rank.Ten;
+                }
+            }
+
+            // A card that could be played on another set of down cards also cannot be discarded - it has to be played in some manner
+            foreach(var downCardGroup in DownCardGroups)
+            {
+                var tempList = new List<IPlayingCard>(downCardGroup);
+                
+                // Check if the card can be played on the front of the group
+                tempList.Insert(0, playingCard);
+                var front = tempList.IsRun() || tempList.IsSet();
+                
+                tempList.RemoveAt(0);
+
+                // Check if the card can be played on the back of the group
+                tempList.Insert(tempList.Count - 1, playingCard);
+                var back = tempList.IsRun() || tempList.IsSet();
+
+                // If the card can be played on any down card group, then it's not a valid discard
+                var canSwapWithJoker = false;
+                if(downCardGroup.Any(x => x is Joker))
+                {
+                    canSwapWithJoker = downCardGroup.Any(x => x is Joker && x.Rank == playingCard.Rank && x.Suit == playingCard.Suit);
+                }
+
+                if(front || back || canSwapWithJoker)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
     }
 }
