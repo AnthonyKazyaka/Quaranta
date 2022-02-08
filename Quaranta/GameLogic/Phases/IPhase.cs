@@ -1,4 +1,5 @@
-﻿using Quaranta.GameLogic.Strategies.OpeningConditions;
+﻿using Quaranta.GameLogic.Players;
+using Quaranta.GameLogic.Strategies.OpeningConditions;
 using System.Collections.Generic;
 
 namespace Quaranta.GameLogic.Phases
@@ -9,6 +10,6 @@ namespace Quaranta.GameLogic.Phases
         Dictionary<QuarantaPlayer, int> ScoreByPlayer { get; }
         IOpeningConditionStrategy OpeningConditionStrategy { get; }
         void SetPlayers(List<QuarantaPlayer> players);
-        void Begin();
+        void Start();
     }
 }

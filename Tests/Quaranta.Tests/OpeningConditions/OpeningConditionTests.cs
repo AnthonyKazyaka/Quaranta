@@ -2,14 +2,13 @@ using CardGameEngine.Cards;
 using CardGameEngine.Players;
 using Quaranta.GameLogic.Strategies.OpeningConditions;
 using System.Collections.Generic;
-using System.Linq;
 using Xunit;
 
 namespace Quaranta.Tests
 {
     public class OpeningConditionTests
     {
-        private Player _player = new Player();
+        private Player _player = new("loltest");
 
         #region High Pair
         public static IEnumerable<object[]> LowPairs()
