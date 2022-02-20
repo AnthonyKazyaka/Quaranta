@@ -11,6 +11,7 @@ namespace Quaranta.GameLogic.Players
     {
         public bool IsOpen { get; set; } = false;
 
+        protected IPlayingCard _lastPickup = null;
         protected Phase _currentPhase { get; set; }
 
         public QuarantaPlayer(string name) : base(name)
@@ -25,50 +26,53 @@ namespace Quaranta.GameLogic.Players
             // Player should, if possible, select a card (or set of cards) from their hand to open, play as a new card group, or play on other groups.
             // Player should select a card from their hand to discard.
 
-            PickupCard();
+            PickupCard();  
 
-            while (true)
+            if (IsOpen)
             {
-                if (IsOpen)
+                do
                 {
-                    do
-                    {
-                        // Play cards
-                        //// You have to choose all of your down card groups before choosing cards to play on other card groups
-                        //// It would be nice to not be so rigid; players could set a few cards down, play a card on somebody else's down cards,
-                        //// and then set another group on the table. Otherwise it's a little rigid and unfriendly to players.
-                        var cardsToPlay = GetCardGroupsToPlay();
-                        PlayCardsOnTable(cardsToPlay);
+                    // Play cards
+                    //// You have to choose all of your down card groups before choosing cards to play on other card groups
+                    //// It would be nice to not be so rigid; players could set a few cards down, play a card on somebody else's down cards,
+                    //// and then set another group on the table. Otherwise it's a little rigid and unfriendly to players.
+                    var cardsToPlay = GetCardGroupsToPlay();
+                    PlayCardsOnTable(cardsToPlay);
 
-                        //var cardGroupsToPlayOnTargetPiles = GetCardsToPlayOnDownCardGroups();
-                        //foreach(var cardGroupToPlayOnTargetPile in cardGroupsToPlayOnTargetPiles)
-                        //{
-                        //    PlayCardsOnTable(cardGroupToPlayOnTargetPile.cardsToPlay, cardGroupToPlayOnTargetPile.targetPile);
-                        //}
-                    }
-                    while (!IsFinishedSelectingCards());
-
-                    break;
+                    //var cardGroupsToPlayOnTargetPiles = GetCardsToPlayOnDownCardGroups();
+                    //foreach(var cardGroupToPlayOnTargetPile in cardGroupsToPlayOnTargetPiles)
+                    //{
+                    //    PlayCardsOnTable(cardGroupToPlayOnTargetPile.cardsToPlay, cardGroupToPlayOnTargetPile.targetPile);
+                    //}
                 }
-                else
+                while (!IsFinishedSelectingCards());
+
+            }
+            else
+            {
+                do
                 {
-                    do
+                    var openingCards = GetCardGroupsToPlay();
+                    if (openingCards != null && openingCards.Any() && _currentPhase.CanOpen(this, openingCards))
                     {
-                        var openingCards = GetCardGroupsToPlay();
-                        if (openingCards != null && _currentPhase.CanOpen(this, openingCards))
-                        {
-                            PlayCardsOnTable(openingCards);
-                            break;
-                        }
-
-                        Console.WriteLine("You can't open with those cards. Would you like to try selecting others? (Y/N)");
-                        if (Console.ReadLine()?.ToUpper() == "Y")
-                        {
-                            break;
-                        }
+                        PlayCardsOnTable(openingCards);
+                        IsOpen = true;
+                        break;
                     }
-                    while (!IsFinishedSelectingCards());
+                    else
+                    {
+                        if (openingCards.Any())
+                        {
+                            Console.WriteLine("You can't open with those cards. Would you like to try selecting others? (Y/N)");
+                            if (Console.ReadLine()?.ToUpper() != "Y")
+                            {
+                                break;
+                            }
+                        }
+                        else break;
+                    }
                 }
+                while (!IsFinishedSelectingCards());
             }
 
             while(true)
@@ -94,12 +98,16 @@ namespace Quaranta.GameLogic.Players
             var topCard = _currentPhase.Deck.Cards.First();
             Hand.Add(topCard);
             _currentPhase.Deck.Cards.RemoveAt(0);
+
+            _lastPickup = topCard;
         }
 
         protected virtual void PickupCardFromDiscardPile()
         {
             var topCard = _currentPhase.DiscardPile.Pop();
             Hand.Add(topCard);
+
+            _lastPickup = topCard;
         }
 
         protected virtual void PickupCard()
@@ -123,6 +131,7 @@ namespace Quaranta.GameLogic.Players
                 {
                     cardGroups.Add(GetCardsToPlay());
                 }
+                else break;
             }
             while (!IsFinishedSelectingCards());
 

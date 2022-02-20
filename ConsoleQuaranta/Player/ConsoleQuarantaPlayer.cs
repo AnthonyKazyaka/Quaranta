@@ -22,6 +22,12 @@ namespace ConsoleQuaranta.Player
             return base.TakeTurnAndDiscard(currentPhase);
         }
 
+        protected override void PickupCard()
+        {
+            base.PickupCard();
+            WriteConsole($"{Name} picked up a {_lastPickup}");
+        }
+
         protected virtual string ToConsoleString(IEnumerable<IPlayingCard> cards) => string.Join(", ", cards.ToList().Select(x => x.ToString()));
         
         protected IPlayingCard GetCardFromConsoleInput()
@@ -47,6 +53,7 @@ namespace ConsoleQuaranta.Player
         {
             while(true)
             {
+                WriteConsole($"Choose a discard from your hand: {ToConsoleString(Hand)}");
                 var chosenCard = GetCardFromConsoleInput();
 
                 // Check if the card is in the hand

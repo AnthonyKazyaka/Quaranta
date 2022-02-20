@@ -32,6 +32,7 @@ namespace Quaranta.GameLogic.Players
 
         protected override bool IsFinishedSelectingCards()
         {
+            return true;
             throw new System.NotImplementedException();
         }
 
@@ -42,6 +43,7 @@ namespace Quaranta.GameLogic.Players
 
         protected override bool ShouldPlayCardsOnTable()
         {
+            return false;
             throw new System.NotImplementedException();
         }
     }
