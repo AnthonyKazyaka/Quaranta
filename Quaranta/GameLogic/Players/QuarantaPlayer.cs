@@ -37,13 +37,15 @@ namespace Quaranta.GameLogic.Players
                     //// It would be nice to not be so rigid; players could set a few cards down, play a card on somebody else's down cards,
                     //// and then set another group on the table. Otherwise it's a little rigid and unfriendly to players.
                     var cardsToPlay = GetCardGroupsToPlay();
-                    PlayCardsOnTable(cardsToPlay);
-
-                    //var cardGroupsToPlayOnTargetPiles = GetCardsToPlayOnDownCardGroups();
-                    //foreach(var cardGroupToPlayOnTargetPile in cardGroupsToPlayOnTargetPiles)
-                    //{
-                    //    PlayCardsOnTable(cardGroupToPlayOnTargetPile.cardsToPlay, cardGroupToPlayOnTargetPile.targetPile);
-                    //}
+                    
+                    if(cardsToPlay.All(x => x.Count >= 3) && cardsToPlay.All(x => x.IsRun() || x.IsSet()))
+                    {
+                        PlayCardsOnTable(cardsToPlay);
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Sorry, those cards aren't playable.");
+                    }
                 }
                 while (!IsFinishedSelectingCards());
 
