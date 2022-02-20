@@ -9,8 +9,9 @@ namespace Quaranta.GameLogic.Players
 {
     public abstract class QuarantaPlayer : Player
     {
-        public Guid PlayerId { get; } = Guid.NewGuid();
         public bool IsOpen { get; set; } = false;
+
+        protected Phase _currentPhase { get; set; }
 
         public QuarantaPlayer(string name) : base(name)
         {
@@ -18,57 +19,148 @@ namespace Quaranta.GameLogic.Players
 
         public virtual IPlayingCard TakeTurnAndDiscard(Phase currentPhase)
         {
+            _currentPhase = currentPhase;
+
             // Player should draw a card, either from the discard pile or from the deck.
             // Player should, if possible, select a card (or set of cards) from their hand to open, play as a new card group, or play on other groups.
             // Player should select a card from their hand to discard.
 
-            // TODO: Card selected by player somehow            
-            // var validCardsToPlay = GET CARDS FROM PLAYER HAND TO PLAY
-            // TODO: Play selected cards somehow
-            // var discard = GET CARD FROM PLAYER HAND TO DISCARD
-
-            // =====================================================
-
-
-            // If player is not already open, can Player open with any cards in their hand?
-            // if(!IsOpen && CanOpen())) // TODO: Implement opening card selection and game condition logic
-            // {
-            // Play opening cards
-            // PlayCards();
-            // return ChooseDiscard();
-            // }
-            // else
-            // {
-            // 
+            PickupCard();
 
             while (true)
+            {
+                if (IsOpen)
+                {
+                    do
+                    {
+                        // Play cards
+                        //// You have to choose all of your down card groups before choosing cards to play on other card groups
+                        //// It would be nice to not be so rigid; players could set a few cards down, play a card on somebody else's down cards,
+                        //// and then set another group on the table. Otherwise it's a little rigid and unfriendly to players.
+                        var cardsToPlay = GetCardGroupsToPlay();
+                        PlayCardsOnTable(cardsToPlay);
+
+                        //var cardGroupsToPlayOnTargetPiles = GetCardsToPlayOnDownCardGroups();
+                        //foreach(var cardGroupToPlayOnTargetPile in cardGroupsToPlayOnTargetPiles)
+                        //{
+                        //    PlayCardsOnTable(cardGroupToPlayOnTargetPile.cardsToPlay, cardGroupToPlayOnTargetPile.targetPile);
+                        //}
+                    }
+                    while (!IsFinishedSelectingCards());
+
+                    break;
+                }
+                else
+                {
+                    do
+                    {
+                        var openingCards = GetCardGroupsToPlay();
+                        if (openingCards != null && _currentPhase.CanOpen(this, openingCards))
+                        {
+                            PlayCardsOnTable(openingCards);
+                            break;
+                        }
+
+                        Console.WriteLine("You can't open with those cards. Would you like to try selecting others? (Y/N)");
+                        if (Console.ReadLine()?.ToUpper() == "Y")
+                        {
+                            break;
+                        }
+                    }
+                    while (!IsFinishedSelectingCards());
+                }
+            }
+
+            while(true)
             {
                 var chosenCard = ChooseDiscard();
                 if (currentPhase.IsDiscardValid(chosenCard))
                 {
-                    var matchingCardFromHand = Hand.FirstOrDefault(x => (x is Joker && chosenCard is Joker) || (x.Rank == chosenCard.Rank && x.Suit == chosenCard.Suit));
-                    if (matchingCardFromHand != null)
-                    {
-                        Hand.Remove(matchingCardFromHand);
-                        return chosenCard;
-                    }
+                    var selectedCard = Hand.SelectCard(chosenCard);
+                    Hand.Remove(selectedCard);
+                    return selectedCard;
                 }
-                
+
                 Console.WriteLine("That card can't be discarded at this time. Please select another card.");
             }
         }
 
-        // Maybe if no target down card group (pile?) is provided, new group is created
-        protected virtual void PlayCard(IPlayingCard card)//, TargetPile pile (?)
-        {
-            // TODO: Place card on a down group or create new down group
-        }
-
-        protected virtual void PlayCards(List<IPlayingCard> cards)//, TargetPile pile (?)
-            => cards.ForEach(PlayCard);
-
         protected abstract IPlayingCard ChooseDiscard();
 
-        protected abstract void PickupCard();
+        protected abstract bool ShouldPickupFromDeck();
+
+        protected virtual void PickupCardFromDeck()
+        {
+            var topCard = _currentPhase.Deck.Cards.First();
+            Hand.Add(topCard);
+            _currentPhase.Deck.Cards.RemoveAt(0);
+        }
+
+        protected virtual void PickupCardFromDiscardPile()
+        {
+            var topCard = _currentPhase.DiscardPile.Pop();
+            Hand.Add(topCard);
+        }
+
+        protected virtual void PickupCard()
+        {
+            if(ShouldPickupFromDeck())
+            {
+                PickupCardFromDeck();
+            }
+            else
+            {
+                PickupCardFromDiscardPile();
+            }
+        }
+
+        protected virtual List<List<IPlayingCard>> GetCardGroupsToPlay()
+        {
+            var cardGroups = new List<List<IPlayingCard>>();
+            do
+            {
+                if (ShouldPlayCardsOnTable())
+                {
+                    cardGroups.Add(GetCardsToPlay());
+                }
+            }
+            while (!IsFinishedSelectingCards());
+
+            return cardGroups;
+        }
+
+        protected abstract List<IPlayingCard> GetCardsToPlay();
+
+        protected abstract bool IsFinishedSelectingCards();
+
+        protected abstract bool ShouldPlayCardsOnTable();
+
+        protected void PlayCardsOnTable(List<IPlayingCard> cardsToPlay, List<IPlayingCard> targetPile)
+        {
+            targetPile.AddRange(cardsToPlay);
+            targetPile = targetPile.OrderBy(x => x.Rank).ThenBy(x => x.Suit).ToList();
+
+            foreach (var card in cardsToPlay)
+            {
+                var cardInHand = Hand.SelectCard(card);
+                Hand.Remove(cardInHand);
+            }
+        }
+
+        protected void PlayCardsOnTable(List<List<IPlayingCard>> cardGroupsToPlay)
+        {
+            foreach (var cardGroup in cardGroupsToPlay)
+            {
+                _currentPhase.DownCardGroups.Add(cardGroup);
+                
+                foreach(var card in cardGroup)
+                {
+                    var cardInHand = Hand.SelectCard(card);
+                    Hand.Remove(cardInHand);
+                }
+            }
+        }
+
+        protected abstract List<(List<IPlayingCard> cardsToPlay, List<IPlayingCard> targetPile)> GetCardsToPlayOnDownCardGroups();
     }
 }

@@ -1,6 +1,7 @@
 ﻿using CardGameEngine.Cards;
 using CardGameEngine.Decks;
 using CardGameEngine.Game.PointEvaluators;
+using CardGameEngine.Players;
 using Quaranta.GameLogic.Players;
 using Quaranta.GameLogic.PointEvaluators;
 using Quaranta.GameLogic.Strategies.OpeningConditions;
@@ -44,6 +45,8 @@ namespace Quaranta.GameLogic.Phases
             Deck.Shuffle();
             DealCards();
 
+            DiscardPile.Push(Deck.DrawCard());
+
             // Has anyone gone out?
             while (!IsFinished())
             {
@@ -55,7 +58,7 @@ namespace Quaranta.GameLogic.Phases
                     // Play a card
                     var discard = player.TakeTurnAndDiscard(this);
 
-                    Console.WriteLine($"{player.Name} discarded a _ {discard}_ ");
+                    Console.WriteLine($"{player.Name} discarded a _{discard}_ ");
                     Console.WriteLine($"{player.Name} has {player.Hand.Count} card{(player.Hand.Count == 1 ? string.Empty : "s")} remaining");
 
                     // Add the card to the down card group
@@ -95,7 +98,7 @@ namespace Quaranta.GameLogic.Phases
                 var playerIndex = i % Players.Count;
                 var player = Players[playerIndex];
 
-                player.AddCard(card);
+                player.Hand.Add(card);
             }
         }
 
@@ -150,6 +153,11 @@ namespace Quaranta.GameLogic.Phases
             }
 
             return true;
+        }
+
+        public bool CanOpen(Player player, List<List<IPlayingCard>> cardGroups)
+        {
+            return OpeningConditionStrategy.IsOpeningConditionMet(player, cardGroups);
         }
     }
 }

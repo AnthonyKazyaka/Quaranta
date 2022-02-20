@@ -1,6 +1,5 @@
 ﻿using CardGameEngine.Cards;
-using Quaranta.GameLogic.Phases;
-using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Quaranta.GameLogic.Players
@@ -13,28 +12,35 @@ namespace Quaranta.GameLogic.Players
         {
         }
 
-        public override IPlayingCard TakeTurnAndDiscard(Phase currentPhase)
-        {
-            while (true)
-            {
-                var chosenCard = ChooseDiscard();
-                if (currentPhase.IsDiscardValid(chosenCard))
-                {
-                    Hand.RemoveAt(_cardIndex);
-                    return chosenCard;
-                }
-            }
-        }
-
         protected override IPlayingCard ChooseDiscard()
         {
-            _cardIndex = _cardIndex++ % Hand.Count;
+            _cardIndex = ++_cardIndex % Hand.Count;
             
             var discard = Hand.Skip(_cardIndex).First();
             return discard;
         }
-        
-        protected override void PickupCard()
+
+        protected override List<IPlayingCard> GetCardsToPlay()
+        {
+            throw new System.NotImplementedException();
+        }
+
+        protected override List<(List<IPlayingCard> cardsToPlay, List<IPlayingCard> targetPile)> GetCardsToPlayOnDownCardGroups()
+        {
+            throw new System.NotImplementedException();
+        }
+
+        protected override bool IsFinishedSelectingCards()
+        {
+            throw new System.NotImplementedException();
+        }
+
+        protected override bool ShouldPickupFromDeck()
+        {
+            return true;
+        }
+
+        protected override bool ShouldPlayCardsOnTable()
         {
             throw new System.NotImplementedException();
         }

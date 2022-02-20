@@ -7,102 +7,41 @@ namespace ConsoleQuaranta.Player
 {
     public class ConsoleQuarantaPlayer : QuarantaPlayer
     {
-        private Phase _phase; // It's helpful to keep this
-
         public ConsoleQuarantaPlayer(string name) : base(name)
         {
         }
 
         public override IPlayingCard TakeTurnAndDiscard(Phase currentPhase)
         {
-            _phase = currentPhase;
-
-            Console.WriteLine("Input your discard. Max of 2 numbers (10) and min of 1 (also J,Q,K,A).");
-            Console.WriteLine("Suits are [H]earts, [D]iamonds, [S]pades, [C]lubs (i.e. H,D,S,C). J* is used for Jokers.");
-            Console.WriteLine("Examples: H7 is parsed as a 7 of Hearts, 8C is the 8 of Clubs, SA is the Ace of Spades (but so is AS), etc.)");
-            Console.WriteLine();
+            WriteConsole("Input your discard. Max of 2 numbers (10) and min of 1 (also J,Q,K,A).");
+            WriteConsole("Suits are [H]earts, [D]iamonds, [S]pades, [C]lubs (i.e. H,D,S,C). J* is used for Jokers.");
+            WriteConsole("Examples: H7 is parsed as a 7 of Hearts, 8C is the 8 of Clubs, SA is the Ace of Spades (but so is AS), etc.)");
+            WriteConsole($"Your current hand: {ToConsoleString(Hand)}");
+            WriteConsole();
 
             return base.TakeTurnAndDiscard(currentPhase);
         }
 
         protected virtual string ToConsoleString(IEnumerable<IPlayingCard> cards) => string.Join(", ", cards.ToList().Select(x => x.ToString()));
-
+        
         protected IPlayingCard GetCardFromConsoleInput()
         {
             while (true)
             {
                 try
                 {
-                    Console.WriteLine($"Current down card piles: ({string.Join("), (", _phase.DownCardGroups.Select(x => ToConsoleString(x)))})");
-                    Console.WriteLine($"Your current hand: {ToConsoleString(Hand)}");
-                    string? input = GetTrimmedInput(GetConsoleInput());
+                    string? input = WriteReadConsole($"Current down card piles: ({string.Join("), (", _currentPhase.DownCardGroups.Select(x => ToConsoleString(x)))})");
 
-                    if (string.IsNullOrWhiteSpace(input) || input.Length < 2 || input.Length > 3)
-                    {
-                        throw new ArgumentOutOfRangeException();
-                    }
-
-                    if(input.Equals("J*"))
-                    {
-                        return new Joker();
-                    }
-
-                    Suit suit = GetSuitFromInputString(input);
-                    Rank rank = GetRankFromInputString(input);
-
-                    return new PlayingCard(suit, rank);
+                    return IPlayingCard.FromString(input);
                 }
                 catch (ArgumentOutOfRangeException)
                 {
-                    Console.WriteLine("That is not a valid input, please try again.");
-                    Console.WriteLine(Environment.NewLine);
+                    WriteConsole("That is not a valid input, please try again.");
+                    WriteConsole();
                     continue;
                 }
             }
         }
-
-        //Find the number in the input string and return it as a rank between 1 and 10
-        protected Rank GetRankFromInputString(string input)
-        {
-            var match = Regex.Match(input, "\\d+");
-            if (match.Success)
-            {
-                return (Rank)int.Parse(match.Value);
-            }
-
-            var highCardValue = Regex.Match(input, "[JQKA]");
-
-            return highCardValue.Value switch
-            {
-                "A" => Rank.Ace,
-                "K" => Rank.King,
-                "Q" => Rank.Queen,
-                "J" => Rank.Jack,
-                _ => throw new NotImplementedException()
-            };
-        }
-
-        protected Suit GetSuitFromInputString(string input)
-        {
-            var match = Regex.Match(input, "[HDSC]");
-            if (match.Success)
-            {
-                return match.Value switch
-                {
-                    "H" => Suit.Hearts,
-                    "D" => Suit.Diamonds,
-                    "C" => Suit.Clubs,
-                    "S" => Suit.Spades,
-                    _ => throw new NotImplementedException()
-                };
-            }
-
-            throw new ArgumentOutOfRangeException();
-        }
-
-        protected string GetConsoleInput() => Console.ReadLine()?.ToUpper() ?? string.Empty;
-
-        protected string GetTrimmedInput(string input) => (input ?? string.Empty).Trim().Replace(" ", string.Empty);
 
         protected override IPlayingCard ChooseDiscard()
         {
@@ -111,19 +50,68 @@ namespace ConsoleQuaranta.Player
                 var chosenCard = GetCardFromConsoleInput();
 
                 // Check if the card is in the hand
-                var matchingCardFromHand = Hand.FirstOrDefault(x => (x is Joker && chosenCard is Joker) || (x.Rank == chosenCard.Rank && x.Suit == chosenCard.Suit));
-                if (matchingCardFromHand != null)
+                try
                 {
-                    return chosenCard;
+                    return Hand.SelectCard(chosenCard);
                 }
-
-                Console.WriteLine("That card isn't in your hand. Please select another card.");
+                catch
+                {
+                    WriteConsole("That card isn't in your hand. Please select another card.");
+                }
             }            
         }
 
-        protected override void PickupCard()
+        protected override bool ShouldPickupFromDeck()
         {
+            WriteConsole($"Top card of discard pile: {_currentPhase.DiscardPile.Peek()}");
+            return WriteReadConsole("Do you want to pick up from the Deck? ('Y' to pick up from the deck. 'N' to pick up from the discard pile.)") == "Y";
+        }
+
+        protected override List<IPlayingCard> GetCardsToPlay()
+        {
+            // Format: (7H, 7S, 7C)  # comma-separated cards, group by parentheses
+            var cardValueTexts = WriteReadConsole("Select a group of cards to play (comma-separated list e.g. '7H, 7D, 7C')")?.Split(",").Select(x => x.Trim());
+            if(cardValueTexts == null)
+            {
+                return new List<IPlayingCard>();
+            }
+
+            var cardValues = cardValueTexts.Select(IPlayingCard.FromString).ToList();
+            List<IPlayingCard> cardsInHand = cardValues.Select(x => Hand.SelectCard(x)).ToList();
+
+            return cardsInHand;
+        }
+
+        protected override bool ShouldPlayCardsOnTable()
+        {
+            return WriteReadConsole("Do you have any cards you'd like to play on the table? (Y/N)") == "Y";
+        }
+
+        protected override bool IsFinishedSelectingCards()
+        {
+            return WriteReadConsole("Are you finished with your selection? (Y/N)") == "Y";
+        }
+
+        protected override List<(List<IPlayingCard> cardsToPlay, List<IPlayingCard> targetPile)> GetCardsToPlayOnDownCardGroups()
+        {
+            
             throw new NotImplementedException();
         }
+
+        protected string? WriteReadConsole(string message)
+        {
+            WriteConsole(message);
+
+            return ReadConsole();
+        }
+
+        protected void WriteConsole()
+            => WriteConsole(string.Empty);
+
+        protected void WriteConsole(string message)
+            => Console.WriteLine(message);
+
+        protected string? ReadConsole()
+            => Console.ReadLine()?.Trim().ToUpper();
     }
 }
