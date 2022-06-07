@@ -1,5 +1,5 @@
-using CardGameEngine.Configuration;
-using CardGameEngine.Game.PointEvaluators;
+using CardGame.Configuration;
+using CardGame.Game.PointEvaluators;
 using Microsoft.Extensions.DependencyInjection;
 using Quaranta.GameLogic.PointEvaluators;
 

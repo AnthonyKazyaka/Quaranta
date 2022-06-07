@@ -1,7 +1,7 @@
-﻿using CardGameEngine.Cards;
-using CardGameEngine.Decks;
-using CardGameEngine.Game.PointEvaluators;
-using CardGameEngine.Players;
+﻿using CardGame.Cards;
+using CardGame.Decks;
+using CardGame.Game.PointEvaluators;
+using CardGame.Players;
 using Quaranta.GameLogic.Players;
 using Quaranta.GameLogic.PointEvaluators;
 using Quaranta.GameLogic.Strategies.OpeningConditions;
@@ -45,7 +45,7 @@ namespace Quaranta.GameLogic.Phases
             Deck.Shuffle();
             DealCards();
 
-            DiscardPile.Push(Deck.DrawCard());
+            DiscardPile.Push(Deck.Draw());
 
             // Has anyone gone out?
             while (!IsFinished())
@@ -94,7 +94,7 @@ namespace Quaranta.GameLogic.Phases
             var cardCountForEachPlayer = 13;
             for(var i = 0; i < Players.Count * cardCountForEachPlayer; i++)
             {
-                var card = Deck.DrawCard();
+                var card = Deck.Draw();
                 var playerIndex = i % Players.Count;
                 var player = Players[playerIndex];
 

@@ -1,5 +1,5 @@
-﻿using CardGameEngine.Cards;
-using CardGameEngine.Players;
+﻿using CardGame.Cards;
+using CardGame.Players;
 using System.Collections.Generic;
 
 namespace Quaranta.GameLogic.Strategies.OpeningConditions

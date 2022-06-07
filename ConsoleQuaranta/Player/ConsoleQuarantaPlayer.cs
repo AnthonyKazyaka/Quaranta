@@ -1,5 +1,5 @@
 ﻿using System.Text.RegularExpressions;
-using CardGameEngine.Cards;
+using CardGame.Cards;
 using Quaranta.GameLogic.Phases;
 using Quaranta.GameLogic.Players;
 
@@ -38,7 +38,7 @@ namespace ConsoleQuaranta.Player
                 {
                     string? input = WriteReadConsole($"Current down card piles: ({string.Join("), (", _currentPhase.DownCardGroups.Select(x => ToConsoleString(x)))})");
 
-                    return IPlayingCard.FromString(input);
+                    return ParseCard(input);
                 }
                 catch (ArgumentOutOfRangeException)
                 {

@@ -1,5 +1,5 @@
-﻿using CardGameEngine.Cards;
-using CardGameEngine.Decks;
+﻿using CardGame.Cards;
+using CardGame.Decks;
 using System;
 using System.Collections.Generic;
 using System.Text;

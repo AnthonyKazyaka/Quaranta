@@ -1,4 +1,4 @@
-﻿using CardGameEngine.Game;
+﻿using CardGame.Game;
 using ConsoleQuaranta.Game;
 using Microsoft.Extensions.DependencyInjection;
 using Quaranta.Configuration;

@@ -1,5 +1,5 @@
-using CardGameEngine.Cards;
-using CardGameEngine.Players;
+using CardGame.Cards;
+using CardGame.Players;
 using Quaranta.GameLogic.Strategies.OpeningConditions;
 using System.Collections.Generic;
 using Xunit;

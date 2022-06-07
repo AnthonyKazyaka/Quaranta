@@ -1,5 +1,5 @@
-﻿using CardGameEngine.Cards;
-using CardGameEngine.Players;
+﻿using CardGame.Cards;
+using CardGame.Players;
 using Quaranta.GameLogic.Phases;
 using System;
 using System.Collections.Generic;
@@ -16,6 +16,13 @@ namespace Quaranta.GameLogic.Players
 
         public QuarantaPlayer(string name) : base(name)
         {
+        }
+
+        public void Reset()
+        {
+            IsOpen = false;
+            Hand = new List<IPlayingCard>();
+            Score = 0;
         }
 
         public virtual IPlayingCard TakeTurnAndDiscard(Phase currentPhase)

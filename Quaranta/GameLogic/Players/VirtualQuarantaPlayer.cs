@@ -1,4 +1,4 @@
-﻿using CardGameEngine.Cards;
+﻿using CardGame.Cards;
 using System.Collections.Generic;
 using System.Linq;
 

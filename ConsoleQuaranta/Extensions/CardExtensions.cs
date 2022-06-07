@@ -1,4 +1,4 @@
-﻿using CardGameEngine.Cards;
+﻿using CardGame.Cards;
 
 namespace ConsoleQuaranta.Extensions
 {

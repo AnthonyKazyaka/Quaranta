@@ -1,5 +1,5 @@
-﻿using CardGameEngine.Decks;
-using CardGameEngine.Game.PointEvaluators;
+﻿using CardGame.Decks;
+using CardGame.Game.PointEvaluators;
 using Quaranta.GameLogic.Phases;
 using Quaranta.GameLogic.Players;
 using Quaranta.GameLogic.PointEvaluators;

@@ -1,4 +1,4 @@
-﻿using CardGameEngine.Game.PointEvaluators;
+﻿using CardGame.Game.PointEvaluators;
 using System.Collections.Generic;
 using System.Linq;
 
