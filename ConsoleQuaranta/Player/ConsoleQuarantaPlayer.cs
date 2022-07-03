@@ -1,5 +1,6 @@
 ﻿using System.Text.RegularExpressions;
 using CardGame.Cards;
+using Quaranta.CardCollections;
 using Quaranta.GameLogic.Phases;
 using Quaranta.GameLogic.Players;
 
@@ -36,9 +37,9 @@ namespace ConsoleQuaranta.Player
             {
                 try
                 {
-                    string? input = WriteReadConsole($"Current down card piles: ({string.Join("), (", _currentPhase.DownCardGroups.Select(x => ToConsoleString(x)))})");
+                    string? input = WriteThenReadConsole($"Current down card piles: ({string.Join("), (", _currentPhase.PlayedMelds.Select(x => ToConsoleString(x)))})");
 
-                    return ParseCard(input);
+                    return IPlayingCard.FromString(input);
                 }
                 catch (ArgumentOutOfRangeException)
                 {
@@ -71,41 +72,41 @@ namespace ConsoleQuaranta.Player
         protected override bool ShouldPickupFromDeck()
         {
             WriteConsole($"Top card of discard pile: {_currentPhase.DiscardPile.Peek()}");
-            return WriteReadConsole("Do you want to pick up from the Deck? ('Y' to pick up from the deck. 'N' to pick up from the discard pile.)") == "Y";
+            return WriteThenReadConsole("Do you want to pick up from the Deck? ('Y' to pick up from the deck. 'N' to pick up from the discard pile.)") == "Y";
         }
 
-        protected override List<IPlayingCard> GetCardsToPlay()
+        protected override Meld GetMeldToPlay()
         {
             // Format: (7H, 7S, 7C)  # comma-separated cards, group by parentheses
-            var cardValueTexts = WriteReadConsole("Select a group of cards to play (comma-separated list e.g. '7H, 7D, 7C')")?.Split(",").Select(x => x.Trim());
+            var cardValueTexts = WriteThenReadConsole("Select a group of cards to play (comma-separated list e.g. '7H, 7D, 7C')")?.Split(",").Select(x => x.Trim());
             if(cardValueTexts == null)
             {
-                return new List<IPlayingCard>();
+                return new Meld();
             }
 
             var cardValues = cardValueTexts.Select(IPlayingCard.FromString).ToList();
-            List<IPlayingCard> cardsInHand = cardValues.Select(x => Hand.SelectCard(x)).ToList();
+            Meld meld = new Meld(cardValues.Select(x => Hand.SelectCard(x)));
 
-            return cardsInHand;
+            return meld;
         }
 
         protected override bool ShouldPlayCardsOnTable()
         {
-            return WriteReadConsole("Do you have any cards you'd like to play on the table? (Y/N)") == "Y";
+            return WriteThenReadConsole("Do you have any cards you'd like to play on the table? (Y/N)") == "Y";
         }
 
         protected override bool IsFinishedSelectingCards()
         {
-            return WriteReadConsole("Are you finished with your selection? (Y/N)") == "Y";
+            return WriteThenReadConsole("Are you finished with your selection? (Y/N)") == "Y";
         }
 
-        protected override List<(List<IPlayingCard> cardsToPlay, List<IPlayingCard> targetPile)> GetCardsToPlayOnDownCardGroups()
+        protected override List<(Meld meldToAdd, Meld targetMeld)> GetMeldsToPlayOnPlayedMelds()
         {
             
             throw new NotImplementedException();
         }
 
-        protected string? WriteReadConsole(string message)
+        protected string? WriteThenReadConsole(string message)
         {
             WriteConsole(message);
 

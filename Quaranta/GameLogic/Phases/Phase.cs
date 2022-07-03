@@ -2,6 +2,7 @@
 using CardGame.Decks;
 using CardGame.Game.PointEvaluators;
 using CardGame.Players;
+using Quaranta.CardCollections;
 using Quaranta.GameLogic.Players;
 using Quaranta.GameLogic.PointEvaluators;
 using Quaranta.GameLogic.Strategies.OpeningConditions;
@@ -15,7 +16,7 @@ namespace Quaranta.GameLogic.Phases
     {
         public List<QuarantaPlayer> Players { get; private set; } = new();
         public Dictionary<QuarantaPlayer, int> ScoreByPlayer { get; } = new();
-        public List<List<IPlayingCard>> DownCardGroups { get; set; } = new();
+        public List<Meld> PlayedMelds { get; set; } = new();
         public Stack<IPlayingCard> DiscardPile { get; private set; } = new();
         public Deck Deck { get; private set; }
         public IOpeningConditionStrategy OpeningConditionStrategy { get; private set; }
@@ -89,7 +90,7 @@ namespace Quaranta.GameLogic.Phases
 
         protected void DealCards()
         {
-            Players.ForEach(player => player.ResetHand());
+            Players.ForEach(player => player.Reset());
 
             var cardCountForEachPlayer = 13;
             for(var i = 0; i < Players.Count * cardCountForEachPlayer; i++)
@@ -125,7 +126,7 @@ namespace Quaranta.GameLogic.Phases
             }
 
             // A card that could be played on another set of down cards also cannot be discarded - it has to be played in some manner
-            foreach(var downCardGroup in DownCardGroups)
+            foreach(var downCardGroup in PlayedMelds)
             {
                 var tempList = new List<IPlayingCard>(downCardGroup);
                 
@@ -155,7 +156,7 @@ namespace Quaranta.GameLogic.Phases
             return true;
         }
 
-        public bool CanOpen(Player player, List<List<IPlayingCard>> cardGroups)
+        public bool CanOpen(Player player, List<Meld> cardGroups)
         {
             return OpeningConditionStrategy.IsOpeningConditionMet(player, cardGroups);
         }

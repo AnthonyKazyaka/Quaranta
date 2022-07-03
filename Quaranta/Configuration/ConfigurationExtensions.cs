@@ -13,7 +13,7 @@ namespace Quaranta.Configuration
             serviceCollection.AddTransient<IPointEvaluator, AllDownPointEvaluator>();
             serviceCollection.AddSingleton<IPointEvaluatorFactory, PointEvaluatorFactory>();
 
-            serviceCollection.ConfigureCardGameEngineDependencies();
+            serviceCollection.ConfigureCardGameDependencies();
         }
     }
 }

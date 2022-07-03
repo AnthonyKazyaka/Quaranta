@@ -1,4 +1,5 @@
 ﻿using CardGame.Cards;
+using Quaranta.CardCollections;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -20,12 +21,12 @@ namespace Quaranta.GameLogic.Players
             return discard;
         }
 
-        protected override List<IPlayingCard> GetCardsToPlay()
+        protected override Meld GetMeldToPlay()
         {
             throw new System.NotImplementedException();
         }
 
-        protected override List<(List<IPlayingCard> cardsToPlay, List<IPlayingCard> targetPile)> GetCardsToPlayOnDownCardGroups()
+        protected override List<(Meld meldToAdd, Meld targetMeld)> GetMeldsToPlayOnPlayedMelds()
         {
             throw new System.NotImplementedException();
         }

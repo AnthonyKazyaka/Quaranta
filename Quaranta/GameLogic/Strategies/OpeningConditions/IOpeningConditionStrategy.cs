@@ -1,5 +1,5 @@
-﻿using CardGame.Cards;
-using CardGame.Players;
+﻿using CardGame.Players;
+using Quaranta.CardCollections;
 using System.Collections.Generic;
 
 namespace Quaranta.GameLogic.Strategies.OpeningConditions
@@ -7,6 +7,6 @@ namespace Quaranta.GameLogic.Strategies.OpeningConditions
     public interface IOpeningConditionStrategy
     {
         OpeningConditionType OpeningCondition { get; }
-        bool IsOpeningConditionMet(Player player, List<List<IPlayingCard>> cardSets);
+        bool IsOpeningConditionMet(Player player, List<Meld> meldsToOpen);
     }
 }
