@@ -54,9 +54,19 @@ namespace Quaranta.GameLogic.Players
                     {
                         Console.WriteLine($"Sorry, those cards aren't playable.");
                     }
+
+                    // The player should have the option to play cards on already played melds
+                    // Need to add a way for a player to select a card in their hand and then the specific meld to add on to
+                    // TODO: Build out this logic
+                    var targetMeld = GetTargetMeld();
+                    var cardsToAddToMeld = GetCardsToAddToMeld();
+
+                    if(targetMeld != null)
+                    {
+                        AddCardsToPlayedMeld(new Meld(cardsToAddToMeld), targetMeld);
+                    }
                 }
                 while (!IsFinishedSelectingCards());
-
             }
             else
             {
@@ -154,16 +164,26 @@ namespace Quaranta.GameLogic.Players
 
         protected abstract bool ShouldPlayCardsOnTable();
 
-        protected void AddMeldToPlayedMeld(Meld meldToPlay, Meld targetMeld)
+        protected void AddCardsToPlayedMeld(List<IPlayingCard> cardsToAdd, Meld targetMeld)
         {
-            targetMeld.AddRange(meldToPlay);
-            targetMeld = new Meld(targetMeld.OrderBy(x => x.Rank).ThenBy(x => x.Suit).ToList()); // No not this
+            targetMeld.AddRange(cardsToAdd);
+            targetMeld = new Meld(targetMeld.OrderBy(x => x.Rank).ThenBy(x => x.Suit).ToList()); // No not this? (7/7/22 - when was this comment added? Is it still valid?)
 
-            foreach (var card in meldToPlay)
+            foreach (var card in cardsToAdd)
             {
                 var cardInHand = Hand.SelectCard(card);
                 Hand.Remove(cardInHand);
             }
+        }
+
+        protected List<IPlayingCard> GetCardsToAddToMeld()
+        {
+            throw new NotImplementedException();
+        }
+
+        protected Meld GetTargetMeld()
+        {
+            throw new NotImplementedException();
         }
 
         protected void PlayCardsOnTable(List<Meld> meldsToPlay)
@@ -180,6 +200,6 @@ namespace Quaranta.GameLogic.Players
             }
         }
 
-        protected abstract List<(Meld meldToAdd, Meld targetMeld)> GetMeldsToPlayOnPlayedMelds();
+        protected abstract List<(Meld meldToAdd, Meld target)> GetMeldsToPlayOnPlayedMelds();
     }
 }
