@@ -178,11 +178,13 @@ namespace Quaranta.GameLogic.Players
 
         protected List<IPlayingCard> GetCardsToAddToMeld()
         {
+            // Choose card(s) to play on the selected meld
             throw new NotImplementedException();
         }
 
         protected Meld GetTargetMeld()
         {
+            // Select a meld to play on
             throw new NotImplementedException();
         }
 
