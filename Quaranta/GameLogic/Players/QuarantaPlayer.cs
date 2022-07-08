@@ -1,5 +1,6 @@
-﻿using CardGameEngine.Cards;
-using CardGameEngine.Players;
+﻿using CardGame.Cards;
+using CardGame.Players;
+using Quaranta.CardCollections;
 using Quaranta.GameLogic.Phases;
 using System;
 using System.Collections.Generic;
@@ -16,6 +17,13 @@ namespace Quaranta.GameLogic.Players
 
         public QuarantaPlayer(string name) : base(name)
         {
+        }
+
+        public void Reset()
+        {
+            IsOpen = false;
+            Hand = new List<IPlayingCard>();
+            Score = 0;
         }
 
         public virtual IPlayingCard TakeTurnAndDiscard(Phase currentPhase)
@@ -36,7 +44,7 @@ namespace Quaranta.GameLogic.Players
                     //// You have to choose all of your down card groups before choosing cards to play on other card groups
                     //// It would be nice to not be so rigid; players could set a few cards down, play a card on somebody else's down cards,
                     //// and then set another group on the table. Otherwise it's a little rigid and unfriendly to players.
-                    var cardsToPlay = GetCardGroupsToPlay();
+                    var cardsToPlay = GetMeldsToPlay();
                     
                     if(cardsToPlay.All(x => x.Count >= 3) && cardsToPlay.All(x => x.IsRun() || x.IsSet()))
                     {
@@ -54,16 +62,16 @@ namespace Quaranta.GameLogic.Players
             {
                 do
                 {
-                    var openingCards = GetCardGroupsToPlay();
-                    if (openingCards != null && openingCards.Any() && _currentPhase.CanOpen(this, openingCards))
+                    var openingMelds = GetMeldsToPlay();
+                    if (openingMelds != null && openingMelds.Any() && _currentPhase.CanOpen(this, openingMelds))
                     {
-                        PlayCardsOnTable(openingCards);
+                        PlayCardsOnTable(openingMelds);
                         IsOpen = true;
                         break;
                     }
                     else
                     {
-                        if (openingCards.Any())
+                        if (openingMelds.Any())
                         {
                             Console.WriteLine("You can't open with those cards. Would you like to try selecting others? (Y/N)");
                             if (Console.ReadLine()?.ToUpper() != "Y")
@@ -124,14 +132,14 @@ namespace Quaranta.GameLogic.Players
             }
         }
 
-        protected virtual List<List<IPlayingCard>> GetCardGroupsToPlay()
+        protected virtual List<Meld> GetMeldsToPlay()
         {
-            var cardGroups = new List<List<IPlayingCard>>();
+            var cardGroups = new List<Meld>();
             do
             {
                 if (ShouldPlayCardsOnTable())
                 {
-                    cardGroups.Add(GetCardsToPlay());
+                    cardGroups.Add(GetMeldToPlay());
                 }
                 else break;
             }
@@ -140,31 +148,31 @@ namespace Quaranta.GameLogic.Players
             return cardGroups;
         }
 
-        protected abstract List<IPlayingCard> GetCardsToPlay();
+        protected abstract Meld GetMeldToPlay();
 
         protected abstract bool IsFinishedSelectingCards();
 
         protected abstract bool ShouldPlayCardsOnTable();
 
-        protected void PlayCardsOnTable(List<IPlayingCard> cardsToPlay, List<IPlayingCard> targetPile)
+        protected void AddMeldToPlayedMeld(Meld meldToPlay, Meld targetMeld)
         {
-            targetPile.AddRange(cardsToPlay);
-            targetPile = targetPile.OrderBy(x => x.Rank).ThenBy(x => x.Suit).ToList();
+            targetMeld.AddRange(meldToPlay);
+            targetMeld = new Meld(targetMeld.OrderBy(x => x.Rank).ThenBy(x => x.Suit).ToList()); // No not this
 
-            foreach (var card in cardsToPlay)
+            foreach (var card in meldToPlay)
             {
                 var cardInHand = Hand.SelectCard(card);
                 Hand.Remove(cardInHand);
             }
         }
 
-        protected void PlayCardsOnTable(List<List<IPlayingCard>> cardGroupsToPlay)
+        protected void PlayCardsOnTable(List<Meld> meldsToPlay)
         {
-            foreach (var cardGroup in cardGroupsToPlay)
+            foreach (var meld in meldsToPlay)
             {
-                _currentPhase.DownCardGroups.Add(cardGroup);
+                _currentPhase.PlayedMelds.Add(meld);
                 
-                foreach(var card in cardGroup)
+                foreach(var card in meld)
                 {
                     var cardInHand = Hand.SelectCard(card);
                     Hand.Remove(cardInHand);
@@ -172,6 +180,6 @@ namespace Quaranta.GameLogic.Players
             }
         }
 
-        protected abstract List<(List<IPlayingCard> cardsToPlay, List<IPlayingCard> targetPile)> GetCardsToPlayOnDownCardGroups();
+        protected abstract List<(Meld meldToAdd, Meld targetMeld)> GetMeldsToPlayOnPlayedMelds();
     }
 }

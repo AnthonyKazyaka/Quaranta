@@ -1,5 +1,6 @@
-﻿using CardGameEngine.Cards;
-using CardGameEngine.Players;
+﻿using CardGame.Cards;
+using CardGame.Players;
+using Quaranta.CardCollections;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -9,7 +10,7 @@ namespace Quaranta.GameLogic.Strategies.OpeningConditions
     {
         public OpeningConditionType OpeningCondition => OpeningConditionType.HighPair;
 
-        public bool IsOpeningConditionMet(Player player, List<List<IPlayingCard>> cardGroups)
+        public bool IsOpeningConditionMet(Player player, List<Meld> cardGroups)
         {
             var containsCorrectNumberOfGroups = cardGroups.Count == 1;
             var isValidOpeningPair = cardGroups.All(x => !x.IsJokerPresent() && x.IsSetOfSize(2));

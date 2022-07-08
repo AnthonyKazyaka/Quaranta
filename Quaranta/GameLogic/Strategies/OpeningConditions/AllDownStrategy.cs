@@ -1,5 +1,6 @@
-﻿using CardGameEngine.Cards;
-using CardGameEngine.Players;
+﻿using CardGame.Cards;
+using CardGame.Players;
+using Quaranta.CardCollections;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -9,9 +10,9 @@ namespace Quaranta.GameLogic.Strategies.OpeningConditions
     {
         public OpeningConditionType OpeningCondition => OpeningConditionType.AllDown;
 
-        public bool IsOpeningConditionMet(Player player, List<List<IPlayingCard>> cardGroups)
+        public bool IsOpeningConditionMet(Player player, List<Meld> melds)
         {
-            var cardCount = cardGroups.Sum(x => x.Count);
+            var cardCount = melds.Sum(x => x.Count);
             if (cardCount < 13 || cardCount != player.Hand.Count - 1)
             {
                 // If these groups don't account for every card in the player's hand (except for the discard),
@@ -19,7 +20,7 @@ namespace Quaranta.GameLogic.Strategies.OpeningConditions
                 return false;
             }
 
-            foreach(var group in cardGroups)
+            foreach(var group in melds)
             {
                 bool isValidSize = group.Count >= 3;
                 bool isRunOrSet = group.IsRun() || group.IsSet();

@@ -1,5 +1,5 @@
-﻿using CardGameEngine.Cards;
-using CardGameEngine.Game.PointEvaluators;
+﻿using CardGame.Cards;
+using CardGame.Game.PointEvaluators;
 using System.Collections.Generic;
 
 namespace Quaranta.GameLogic.PointEvaluators

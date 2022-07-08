@@ -1,4 +1,4 @@
-﻿using CardGameEngine.Game;
+﻿using CardGame.Game;
 using Quaranta.GameLogic.Phases;
 using Quaranta.GameLogic.Players;
 using System.Collections.Generic;
