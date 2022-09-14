@@ -44,26 +44,22 @@ namespace Quaranta.GameLogic.Players
                     //// You have to choose all of your down card groups before choosing cards to play on other card groups
                     //// It would be nice to not be so rigid; players could set a few cards down, play a card on somebody else's down cards,
                     //// and then set another group on the table. Otherwise it's a little rigid and unfriendly to players.
-                    var cardsToPlay = GetMeldsToPlay();
+                    var meldsToPlay = GetNewMeldsToPlay();
                     
-                    if(cardsToPlay.All(x => x.Count >= 3) && cardsToPlay.All(x => x.IsRun() || x.IsSet()))
+                    if(meldsToPlay.All(x => x.Count >= 3) && meldsToPlay.All(x => x.IsRun() || x.IsSet()))
                     {
-                        PlayCardsOnTable(cardsToPlay);
+                        PlayCardsOnTable(meldsToPlay);
                     }
                     else
                     {
                         Console.WriteLine($"Sorry, those cards aren't playable.");
                     }
 
-                    // The player should have the option to play cards on already played melds
-                    // Need to add a way for a player to select a card in their hand and then the specific meld to add on to
-                    // TODO: Build out this logic
-                    var targetMeld = GetTargetMeld();
-                    var cardsToAddToMeld = GetCardsToAddToMeld();
-
-                    if(targetMeld != null)
+                    // Ask the player if they want to add cards to any of the melds on the table.
+                    (Meld targetMeld, List<IPlayingCard> cardsToAdd) = GetCardsToAddToMeldOnTable();
+                    foreach(var card in cardsToAdd)
                     {
-                        AddCardsToPlayedMeld(new Meld(cardsToAddToMeld), targetMeld);
+                        targetMeld.Add(card);
                     }
                 }
                 while (!IsFinishedSelectingCards());
@@ -72,7 +68,7 @@ namespace Quaranta.GameLogic.Players
             {
                 do
                 {
-                    var openingMelds = GetMeldsToPlay();
+                    var openingMelds = GetNewMeldsToPlay();
                     if (openingMelds != null && openingMelds.Any() && _currentPhase.CanOpen(this, openingMelds))
                     {
                         PlayCardsOnTable(openingMelds);
@@ -111,6 +107,8 @@ namespace Quaranta.GameLogic.Players
 
         protected abstract IPlayingCard ChooseDiscard();
 
+        protected abstract (Meld targetMeld, List<IPlayingCard> cardsToAdd) GetCardsToAddToMeldOnTable();
+
         protected abstract bool ShouldPickupFromDeck();
 
         protected virtual void PickupCardFromDeck()
@@ -142,7 +140,7 @@ namespace Quaranta.GameLogic.Players
             }
         }
 
-        protected virtual List<Meld> GetMeldsToPlay()
+        protected virtual List<Meld> GetNewMeldsToPlay()
         {
             var cardGroups = new List<Meld>();
             do
@@ -176,18 +174,14 @@ namespace Quaranta.GameLogic.Players
             }
         }
 
-        protected List<IPlayingCard> GetCardsToAddToMeld()
+        protected Meld GetCardsToAddToMeld()
         {
             // Choose card(s) to play on the selected meld
-            throw new NotImplementedException();
+            return GetMeldToPlay();
         }
 
-        protected Meld GetTargetMeld()
-        {
-            // Select a meld to play on
-            throw new NotImplementedException();
-        }
-
+        protected abstract Meld GetTargetMeld();
+        
         protected void PlayCardsOnTable(List<Meld> meldsToPlay)
         {
             foreach (var meld in meldsToPlay)
@@ -201,7 +195,5 @@ namespace Quaranta.GameLogic.Players
                 }
             }
         }
-
-        protected abstract List<(Meld meldToAdd, Meld target)> GetMeldsToPlayOnPlayedMelds();
     }
 }
