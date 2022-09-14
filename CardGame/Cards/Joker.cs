@@ -2,7 +2,7 @@
 {
     public class Joker : IPlayingCard
     {
-        public PlayingCard RepresentedCard { get; private set; }
+        public PlayingCard? RepresentedCard { get; private set; }
 
         public Suit Suit => RepresentedCard.Suit;
 
@@ -15,7 +15,7 @@
 
         public override bool Equals(object? obj)
         {
-            if (obj is Joker joker)
+            if (obj is Joker)
             {
                 return true;
             }

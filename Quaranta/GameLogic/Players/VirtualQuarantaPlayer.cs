@@ -21,12 +21,17 @@ namespace Quaranta.GameLogic.Players
             return discard;
         }
 
+        protected override (Meld targetMeld, List<IPlayingCard> cardsToAdd) GetCardsToAddToMeldOnTable()
+        {
+            throw new System.NotImplementedException();
+        }
+
         protected override Meld GetMeldToPlay()
         {
             throw new System.NotImplementedException();
         }
 
-        protected override List<(Meld meldToAdd, Meld targetMeld)> GetMeldsToPlayOnPlayedMelds()
+        protected override Meld GetTargetMeld()
         {
             throw new System.NotImplementedException();
         }

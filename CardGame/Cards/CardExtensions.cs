@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-
-namespace CardGame.Cards
+﻿namespace CardGame.Cards
 {
     public static class CardExtensions
     {
@@ -12,6 +9,17 @@ namespace CardGame.Cards
 
         public static IPlayingCard SelectCard(this IEnumerable<IPlayingCard> cards, IPlayingCard card)
         {
+            if(card is Joker joker)
+            {
+                var equivalentJoker = cards.OfType<Joker>().First();
+                if (joker.RepresentedCard != null)
+                {
+                    equivalentJoker.SetValue(joker.RepresentedCard.Suit, joker.RepresentedCard.Rank);
+                }
+
+                return equivalentJoker;
+            }
+            
             return cards.First(c => c.Equals(card));
         }
 
@@ -24,7 +32,7 @@ namespace CardGame.Cards
                 return false;
             }
 
-            if (orderedCards.FirstOrDefault().Rank == Rank.Ace && !orderedCards.Any(x => x.Rank == Rank.Two))
+            if (orderedCards.FirstOrDefault()?.Rank == Rank.Ace && !orderedCards.Any(x => x.Rank == Rank.Two))
             {
                 orderedCards.Add(orderedCards.First());
                 orderedCards.RemoveAt(0);
