@@ -1,0 +1,23 @@
+{
+  "name": "quaranta",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "shared",
+    "mobile"
+  ],
+  "scripts": {
+    "test": "npm run test:shared && npm run test:mobile",
+    "test:shared": "npm test --workspace @quaranta/shared",
+    "test:mobile": "npm test --workspace @quaranta/mobile",
+    "typecheck": "npm run typecheck --workspace @quaranta/shared && npm run typecheck --workspace @quaranta/mobile",
+    "lint": "npm run lint --workspace @quaranta/mobile",
+    "start": "npm start --workspace @quaranta/mobile",
+    "web": "npm run web --workspace @quaranta/mobile",
+    "android": "npm run android --workspace @quaranta/mobile",
+    "ios": "npm run ios --workspace @quaranta/mobile",
+    "build:web": "npm run build:web --workspace @quaranta/mobile",
+    "deploy:hosting": "npm run build:web && npx firebase-tools deploy --only hosting",
+    "deploy:rules": "npx firebase-tools deploy --only firestore"
+  }
+}
