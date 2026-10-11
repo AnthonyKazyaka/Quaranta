@@ -33,10 +33,17 @@ npm run typecheck && npm run lint && npm test && npm run build:web
 
 Firebase is optional. Without config the game runs offline and saves the current game on the device. With it, every game is also saved to Firestore under an anonymous user.
 
-1. Create a Firebase project and add a **Web app**. Enable **Authentication → Anonymous** and create a **Firestore** database.
-2. Copy `mobile/.env.example` to `mobile/.env` and fill in the web app's config.
-3. Point the CLI at the project and deploy the rules: `npx firebase-tools use --add`, then `npm run deploy:rules`.
-4. Optional: `npm run deploy:hosting` publishes the web build (`mobile/dist`) to Firebase Hosting.
+The project is `quaranta-f22d7` (set as the default in `.firebaserc`), with anonymous sign-in enabled and Firestore in `nam5`. Its web app is named **Quaranta**.
+
+1. Create `mobile/.env` from the web app's config (it's gitignored):
+
+   ```bash
+   npx firebase-tools apps:sdkconfig WEB 1:741147364469:web:dc2ab88aa2d4051d58bc3c
+   ```
+
+   Copy the values into the keys listed in `mobile/.env.example`, then restart the dev server with `--clear` so Metro picks up the new config.
+2. After editing `firestore.rules` or `firestore.indexes.json`, deploy them with `npm run deploy:rules`.
+3. Optional: `npm run deploy:hosting` publishes the web build (`mobile/dist`) to Firebase Hosting.
 
 Data model: `users/{uid}/games/{gameId}` holds a summary (status, hand, players, scores) for listing plus the full engine state as a JSON string. Rules are in `firestore.rules`.
 
