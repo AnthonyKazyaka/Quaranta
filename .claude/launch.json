@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "quaranta-web",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["expo", "start", "mobile", "--web", "--port", "8091", "--offline"],
+      "port": 8091
+    }
+  ]
+}
