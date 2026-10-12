@@ -3,9 +3,13 @@ import {
   GameAction,
   GamePlayer,
   GameState,
+  buyableCard,
+  canBuy,
+  canDrawFromDeck,
   currentPhase,
   currentPlayer,
   discardableCardIds,
+  getPlayer,
   topDiscard,
 } from './game';
 import {
@@ -293,13 +297,43 @@ function shouldTakeDiscard(state: GameState, player: GamePlayer): boolean {
   return findOpeningMelds([...player.hand, card], condition) !== null;
 }
 
+/** Bots stop buying once their hand is this big; it also keeps the meld search bounded. */
+const MAX_HAND_FOR_BUYING = 15;
+/** An opponent this close to going out makes extra cards too risky to take on. */
+const RISKY_HAND_SIZE = 3;
+/** How well a card must fit the hand (see keepScore) before a bot buys it on spec. */
+const BUY_FIT_THRESHOLD = 2.5;
+
+/**
+ * Whether a bot should ask to buy the card on offer. A bought card is one more card to get rid
+ * of, so bots buy when it completes their opening or a new meld, and only buy cheap cards that
+ * merely help when nobody is about to go out.
+ */
+export function chooseBotBuy(state: GameState, playerId: string): boolean {
+  if (!canBuy(state, playerId)) return false;
+  const card = buyableCard(state)!;
+  const player = getPlayer(state, playerId);
+  if (player.hand.length >= MAX_HAND_FOR_BUYING) return false;
+
+  const danger = state.players.some((p) => p.id !== playerId && p.isOpen && p.hand.length <= RISKY_HAND_SIZE);
+  if (player.isOpen) return !danger && formsNewMeld(card, player.hand);
+
+  const condition = currentPhase(state).condition;
+  if (findOpeningMelds(player.hand, condition) !== null) return false;
+  const withCard = [...player.hand, card];
+  if (findOpeningMelds(withCard, condition) !== null) return true;
+  if (danger || condition === 'allDown') return false;
+  return handPoints([card], condition) <= 10 && keepScore(card, withCard, OPENING_WEIGHTS[condition]) >= BUY_FIT_THRESHOLD;
+}
+
 /** Decides the next action for the bot whose turn it is. Call repeatedly until the turn passes. */
 export function chooseBotAction(state: GameState): GameAction {
   const player = currentPlayer(state);
   const playerId = player.id;
 
   if (state.turnStage === 'draw') {
-    return shouldTakeDiscard(state, player) ? { type: 'drawFromDiscard', playerId } : { type: 'drawFromDeck', playerId };
+    const takeDiscard = shouldTakeDiscard(state, player) || !canDrawFromDeck(state);
+    return takeDiscard ? { type: 'drawFromDiscard', playerId } : { type: 'drawFromDeck', playerId };
   }
 
   if (!player.isOpen) {
