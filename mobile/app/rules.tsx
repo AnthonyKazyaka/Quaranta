@@ -16,7 +16,7 @@ const TURN_RULES = [
 
 const BUYING = [
   "When the player whose turn it is draws from the deck instead of taking the top discard, anyone else may buy that discard. It's open to everyone, whether or not they've opened.",
-  "Every card is for sale except jokers and the very first card turned up in the game.",
+  "Every card is for sale except jokers and the card turned up when the hand is dealt.",
   'The offer stays open until that player discards. If several people want the card, it goes to the first of them in turn order after that player.',
   `A buyer takes just the one card and puts ${formatCents(STAKES.buy)} in the pot. There's no limit, but every card you buy is one more you could be caught holding when someone goes out.`,
 ];

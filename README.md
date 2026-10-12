@@ -54,7 +54,7 @@ Data model: `users/{uid}/games/{gameId}` holds a summary (status, hand, players,
 - Draw from the deck or the discard pile, open once per hand, then (on later turns) lay runs or sets of 3+, add to any meld on the table and swap natural cards for jokers.
 - Discard limits: no card that plays on the table, and no high cards in the first two hands until everyone has opened. If every card is blocked, any card may go.
 - Scoring: 2 through 10 at face value, faces 10, Aces 1 (or 11 each if you hold more than one), jokers 25, capped at 100 per hand. In All Down, anyone holding cards takes 100.
-- Buying: when the current player draws from the deck, anyone else (open or not) may buy the top discard they passed over, except jokers and the very first card turned up in the game. The offer stays open until that player discards; then the first requester in turn order after them gets the card. The buyer takes only that card. There's no limit.
+- Buying: when the current player draws from the deck, anyone else (open or not) may buy the top discard they passed over, except jokers and the card turned up when the hand is dealt. The offer stays open until that player discards; then the first requester in turn order after them gets the card. The buyer takes only that card. There's no limit.
 - Stakes (play money): everyone antes 25¢ each hand and pays 10¢ per card bought; whoever goes out takes the pot. The game's winner collects 50¢ from every other player. Amounts are `STAKES` in `shared/src/game.ts`.
 
 House rules added during the port (easy to change in `shared/src/game.ts`):

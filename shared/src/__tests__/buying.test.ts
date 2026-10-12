@@ -46,7 +46,7 @@ describe('buy window', () => {
     expect(() => buy(next, 'p2')).toThrow(/no card to buy/);
   });
 
-  it("doesn't offer the game's first turned-up card", () => {
+  it("doesn't offer the card turned up at the deal", () => {
     const dealt = threePlayers();
     expect(dealt.firstDiscardId).toBe(dealt.discardPile[0].id);
     const next = draw(dealt);
@@ -55,13 +55,12 @@ describe('buy window', () => {
     expect(discardFirst(next).firstDiscardId).toBeNull();
   });
 
-  it("offers the turned-up card in every later hand", () => {
+  it('protects the turned-up card in every hand, not just the first', () => {
     let state = discardFirst(scenario(['2C', '4S', '5S'], '9C 7H', { turnStage: 'play' }));
     expect(state.status).toBe('roundOver');
     state = applyAction(state, { type: 'nextRound' });
-    expect(state.firstDiscardId).toBeNull();
-    const next = draw(state);
-    expect(next.buyWindow?.cardId).toBe(state.discardPile[0].id);
+    expect(state.firstDiscardId).toBe(state.discardPile[0].id);
+    expect(draw(state).buyWindow).toBeNull();
   });
 
   it("doesn't offer a joker", () => {

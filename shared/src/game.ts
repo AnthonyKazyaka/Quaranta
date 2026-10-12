@@ -88,7 +88,7 @@ export interface GameState {
   reshuffles: number;
   /** The open buy window, if the current player drew from the deck this turn. */
   buyWindow: BuyWindow | null;
-  /** The first card turned up in the game, until someone discards over it. It's the one card (besides jokers) that can't be bought. */
+  /** The card turned up when the hand was dealt, until someone discards over it. It's the one card (besides jokers) that can't be bought. */
   firstDiscardId: string | null;
   /** Cents in the pot this hand. */
   pot: number;
@@ -320,8 +320,7 @@ function dealRound(state: GameState, phaseIndex: number, dealerIndex: number): G
     discardPile: [firstDiscard],
     reshuffles: 0,
     buyWindow: null,
-    // Card ids repeat every hand, so only the opening hand's turned-up card is marked.
-    firstDiscardId: phaseIndex === 0 ? firstDiscard.id : null,
+    firstDiscardId: firstDiscard.id,
     melds: [],
     status: 'playing',
     rngState,
@@ -559,7 +558,7 @@ function discard(state: GameState, player: GamePlayer, cardId: string): GameStat
   let next: GameState = {
     ...updatePlayer(settled, player.id, { hand: remaining }),
     discardPile: [...settled.discardPile, resetCard(card)],
-    // The game's first card has been covered; if it ever comes back up, it's a discard like any other.
+    // The dealt card has been covered; if it ever comes back up, it's a discard like any other.
     firstDiscardId: null,
   };
   next = addLog(next, `${player.name} discarded ${cardLabel(card)}.`, player.id);
