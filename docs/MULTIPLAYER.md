@@ -90,7 +90,7 @@ Security rules for this are small: everything is read-only to clients except thr
 1. `getPlayerView(state, playerId)`: the redacted view, promoted from the spike, with tests asserting nothing hidden leaks.
 2. `version` on `GameState`, incremented by every action, for optimistic concurrency and stale-move rejection.
 3. Seats keyed by Firebase uid (`PlayerSetup.id` already allows custom ids).
-4. **Buying**: the out-of-turn rule (README to-do). Needs a short "buy window" in the turn state and a priority order when several players want the same card. This is the rule most affected by network latency, so it should be designed for multiplayer from the start.
+4. **Buying**: done in the engine. `GameState.buyWindow` opens when the current player draws from the deck; anyone else sends `{ type: 'buy' }` while it's open, and requests settle in turn order when that player discards. Because priority is by seat rather than by who asked first, network latency doesn't decide who gets the card. Online play still needs a buy prompt and the bot-pause the single-player store uses (`BUY_DECISION_MS` in `mobile/app/game.tsx`) turned into a server-side wait.
 5. Keep time out of the engine; Functions own deadlines and timestamps.
 
 ## Milestones
@@ -118,5 +118,5 @@ Security rules for this are small: everything is read-only to clients except thr
 1. **Upgrade to Blaze** so Functions can run (needs a billing account; only the project owner can do this in the console).
 2. **Live or asynchronous games?** Live (minutes-long turn timer, everyone online) is simpler. Async (hours to move, notifications) changes timers and makes push notifications essential.
 3. **Identity:** stay anonymous for the first release, or add Google sign-in now so games follow players across devices?
-4. **Buying rule details:** who gets priority, whether a buy costs a penalty card, and any limit per hand.
+4. ~~**Buying rule details**~~: decided. Priority in turn order, no penalty card, no limit; buying costs 10¢ into the pot (see README).
 5. **Seat count online:** 2 to 4 (matches the app today) or up to 6 (the engine supports it).

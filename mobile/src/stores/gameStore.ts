@@ -4,7 +4,10 @@ import {
   GameRuleError,
   GameState,
   applyAction,
+  canBuy,
+  canDrawFromDeck,
   chooseBotAction,
+  chooseBotBuy,
   createGame,
   currentPlayer,
   discardableCardIds,
@@ -37,6 +40,8 @@ interface GameStore {
   stagedMelds: string[][];
   message: StoreMessage | null;
   botActionsThisTurn: number;
+  /** The buy offer the human declined (see buyOfferKey), so the table stops waiting on them. */
+  buyPassedKey: string | null;
 
   startGame: (playerName: string, botCount: number) => void;
   quitGame: () => void;
@@ -52,8 +57,29 @@ interface GameStore {
   laySelection: () => void;
   discardSelection: () => void;
   playSelectionOnMeld: (meldId: string) => void;
+  buyDiscard: () => void;
+  passBuy: () => void;
   nextRound: () => void;
   runBotStep: () => void;
+}
+
+/** Identifies one buy offer: a card can come up for sale again later in the hand. */
+export function buyOfferKey(game: GameState): string | null {
+  const window = game.buyWindow;
+  return window ? `${game.phaseIndex}:${game.reshuffles}:${game.currentPlayerIndex}:${window.cardId}` : null;
+}
+
+/** When a buy window opens, every bot that isn't playing decides whether to ask for the card. */
+function runBotBuys(previous: GameState, next: GameState): GameState {
+  const window = next.buyWindow;
+  if (!window || previous.buyWindow?.cardId === window.cardId) return next;
+  let state = next;
+  for (const player of state.players) {
+    if (player.isBot && canBuy(state, player.id) && chooseBotBuy(state, player.id)) {
+      state = applyAction(state, { type: 'buy', playerId: player.id });
+    }
+  }
+  return state;
 }
 
 /**
@@ -77,7 +103,7 @@ export const useGameStore = create<GameStore>()(
 
         let next: GameState;
         try {
-          next = applyAction(game, action);
+          next = runBotBuys(game, applyAction(game, action));
         } catch (error) {
           if (error instanceof GameRuleError) {
             set({ message: { text: error.message, tone: 'error' } });
@@ -117,6 +143,7 @@ export const useGameStore = create<GameStore>()(
         stagedMelds: [],
         message: null,
         botActionsThisTurn: 0,
+        buyPassedKey: null,
 
         startGame: (playerName, botCount) => {
           const name = playerName.trim() || 'You';
@@ -213,6 +240,12 @@ export const useGameStore = create<GameStore>()(
           }
         },
 
+        buyDiscard: () => humanAction((playerId) => ({ type: 'buy', playerId })),
+        passBuy: () => {
+          const { game } = get();
+          set({ buyPassedKey: game ? buyOfferKey(game) : null });
+        },
+
         nextRound: () => dispatch({ type: 'nextRound' }),
 
         runBotStep: () => {
@@ -230,7 +263,7 @@ export const useGameStore = create<GameStore>()(
             // The bot chose an illegal move; fall back to something always legal.
             dispatch(
               game.turnStage === 'draw'
-                ? { type: 'drawFromDeck', playerId: bot.id }
+                ? { type: canDrawFromDeck(game) ? 'drawFromDeck' : 'drawFromDiscard', playerId: bot.id }
                 : { type: 'discard', playerId: bot.id, cardId: discardableCardIds(game, bot.id)[0] },
             );
           }
@@ -240,12 +273,23 @@ export const useGameStore = create<GameStore>()(
     {
       name: 'quaranta-game',
       storage: createJSONStorage(() => AsyncStorage),
-      version: 1,
-      // v0 games predate GameState.version and GameState.reshuffles.
+      version: 2,
+      // v0 games predate GameState.version and GameState.reshuffles; v1 games predate buying and stakes.
       migrate: (persisted, fromVersion) => {
         const state = persisted as { game: GameState | null };
         if (fromVersion < 1 && state.game) {
           state.game = { ...state.game, version: state.game.version ?? 0, reshuffles: state.game.reshuffles ?? 0 };
+        }
+        if (fromVersion < 2 && state.game) {
+          const game = state.game;
+          state.game = {
+            ...game,
+            buyWindow: game.buyWindow ?? null,
+            firstDiscardId: game.firstDiscardId ?? null,
+            pot: game.pot ?? 0,
+            purses: game.purses ?? Object.fromEntries(game.players.map((p) => [p.id, 0])),
+            results: game.results.map((r) => ({ ...r, pot: r.pot ?? 0 })),
+          };
         }
         return state as GameStore;
       },

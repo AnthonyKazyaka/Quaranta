@@ -1,5 +1,5 @@
 import { Card } from './cards';
-import { GameLogEntry, GameState, GameStatus, RoundResult, TableMeld, TurnStage } from './game';
+import { BuyWindow, GameLogEntry, GameState, GameStatus, RoundResult, TableMeld, TurnStage } from './game';
 
 export interface PublicPlayer {
   id: string;
@@ -27,6 +27,10 @@ export interface PublicGameView {
   melds: TableMeld[];
   topDiscard: Card | null;
   discardCount: number;
+  /** Buy requests are made out loud, so everyone sees them. */
+  buyWindow: BuyWindow | null;
+  pot: number;
+  purses: Record<string, number>;
   deckCount: number;
   results: RoundResult[];
   log: GameLogEntry[];
@@ -58,6 +62,9 @@ export function getPublicView(state: GameState): PublicGameView {
     melds: state.melds,
     topDiscard: state.discardPile[state.discardPile.length - 1] ?? null,
     discardCount: state.discardPile.length,
+    buyWindow: state.buyWindow ?? null,
+    pot: state.pot ?? 0,
+    purses: state.purses ?? {},
     deckCount: state.deck.length,
     results: state.results,
     log: state.log,

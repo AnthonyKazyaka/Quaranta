@@ -1,5 +1,7 @@
-import { Pressable, StyleSheet, Text, ViewStyle } from 'react-native';
+import { useRef } from 'react';
+import { Animated, Pressable, StyleSheet, Text, ViewStyle } from 'react-native';
 import { colors, radius, spacing } from '@/theme';
+import { prefersReducedMotion, useNativeDriver } from './motion';
 
 interface ButtonProps {
   label: string;
@@ -8,26 +10,38 @@ interface ButtonProps {
   disabled?: boolean;
   style?: ViewStyle;
   compact?: boolean;
+  accessibilityHint?: string;
 }
 
-export function Button({ label, onPress, variant = 'primary', disabled, style, compact }: ButtonProps) {
+export function Button({ label, onPress, variant = 'primary', disabled, style, compact, accessibilityHint }: ButtonProps) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const pressTo = (toValue: number) => {
+    if (prefersReducedMotion()) return;
+    Animated.spring(scale, { toValue, friction: 6, tension: 260, useNativeDriver }).start();
+  };
+
   return (
-    <Pressable
-      onPress={onPress}
-      disabled={disabled}
-      accessibilityRole="button"
-      accessibilityState={{ disabled: !!disabled }}
-      style={({ pressed }) => [
-        styles.base,
-        compact && styles.compact,
-        styles[variant],
-        pressed && !disabled && styles.pressed,
-        disabled && styles.disabled,
-        style,
-      ]}
-    >
-      <Text style={[styles.label, variant === 'primary' ? styles.primaryLabel : styles.secondaryLabel]}>{label}</Text>
-    </Pressable>
+    <Animated.View style={[{ transform: [{ scale }] }, style]}>
+      <Pressable
+        onPress={onPress}
+        onPressIn={() => pressTo(0.96)}
+        onPressOut={() => pressTo(1)}
+        disabled={disabled}
+        accessibilityRole="button"
+        accessibilityState={{ disabled: !!disabled }}
+        accessibilityHint={accessibilityHint}
+        style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
+          styles.base,
+          compact && styles.compact,
+          styles[variant],
+          hovered && !disabled && hoverStyles[variant],
+          pressed && !disabled && styles.pressed,
+          disabled && styles.disabled,
+        ]}
+      >
+        <Text style={[styles.label, compact && styles.compactLabel, labelStyles[variant]]}>{label}</Text>
+      </Pressable>
+    </Animated.View>
   );
 }
 
@@ -38,37 +52,53 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 44,
+    minHeight: 46,
   },
   compact: {
     paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.md + 2,
+    minHeight: 40,
   },
   primary: {
     backgroundColor: colors.gold,
+    borderBottomWidth: 3,
+    borderBottomColor: colors.goldDark,
+    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.25)',
   },
   secondary: {
-    backgroundColor: colors.surface,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: 'rgba(242, 214, 150, 0.28)',
   },
   ghost: {
     backgroundColor: 'transparent',
   },
   pressed: {
-    opacity: 0.8,
+    opacity: 0.88,
   },
   disabled: {
-    opacity: 0.4,
+    opacity: 0.35,
+    boxShadow: 'none',
   },
   label: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '800',
+    letterSpacing: 0.3,
+    userSelect: 'none',
   },
-  primaryLabel: {
-    color: colors.feltDark,
+  compactLabel: {
+    fontSize: 14,
   },
-  secondaryLabel: {
-    color: colors.text,
-  },
+});
+
+const hoverStyles = StyleSheet.create({
+  primary: { backgroundColor: colors.goldLight },
+  secondary: { backgroundColor: 'rgba(255, 255, 255, 0.11)' },
+  ghost: { backgroundColor: 'rgba(255, 255, 255, 0.06)' },
+});
+
+const labelStyles = StyleSheet.create({
+  primary: { color: colors.feltDeep },
+  secondary: { color: colors.text },
+  ghost: { color: colors.textMuted },
 });

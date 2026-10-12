@@ -1,6 +1,6 @@
 import { Card, parseCards } from '../cards';
 import { chooseBotAction } from '../bot';
-import { GameState, applyAction, canDiscard, createGame, currentPlayer, totalScores } from '../game';
+import { GameState, applyAction, canDiscard, canDrawFromDeck, createGame, currentPlayer, totalScores } from '../game';
 import { PHASES } from '../openingConditions';
 
 const twoPlayers = () =>
@@ -170,7 +170,7 @@ describe('opening and table play', () => {
     state = applyAction(state, { type: 'addToMeld', playerId: 'p1', meldId: 'm1', cardIds: [joker.id] });
 
     expect(state.status).toBe('roundOver');
-    expect(state.results[0]).toEqual({ phaseIndex: 2, winnerId: 'p1', points: { p1: 0, p2: 2 } });
+    expect(state.results[0]).toEqual({ phaseIndex: 2, winnerId: 'p1', points: { p1: 0, p2: 2 }, pot: 50 });
   });
 
   it('rotates the dealer and advances the phase for the next hand', () => {
@@ -197,12 +197,21 @@ describe('running out of cards', () => {
     expect(next.deck).toHaveLength(1);
   });
 
-  it('ends the hand with no winner once the reshuffle limit is reached', () => {
+  it('keeps reshuffling, since a hand only ends when someone goes out', () => {
     const base = twoPlayers();
-    const state = { ...base, deck: [], reshuffles: 2 };
+    const state = { ...base, deck: [], reshuffles: 5, discardPile: parseCards('2H 3H') };
     const next = applyAction(state, { type: 'drawFromDeck', playerId: currentPlayer(state).id });
-    expect(next.status).toBe('roundOver');
-    expect(next.results[0].winnerId).toBeNull();
+    expect(next.status).toBe('playing');
+    expect(next.reshuffles).toBe(6);
+  });
+
+  it('makes the player take the discard when there is nothing to reshuffle', () => {
+    const base = twoPlayers();
+    const state = { ...base, deck: [], discardPile: parseCards('2H') };
+    const playerId = currentPlayer(state).id;
+    expect(canDrawFromDeck(state)).toBe(false);
+    expect(() => applyAction(state, { type: 'drawFromDeck', playerId })).toThrow(/Take the top discard/);
+    expect(chooseBotAction(state)).toEqual({ type: 'drawFromDiscard', playerId });
   });
 });
 

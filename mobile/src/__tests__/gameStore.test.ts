@@ -1,6 +1,6 @@
-import { currentPlayer, discardableCardIds } from '@quaranta/shared';
+import { STAKES, buyableCard, canBuy, cardLabel, currentPlayer, discardableCardIds } from '@quaranta/shared';
 import { saveGame } from '@/services/gameRepository';
-import { useGameStore } from '@/stores/gameStore';
+import { buyOfferKey, useGameStore } from '@/stores/gameStore';
 
 jest.mock('@/services/gameRepository', () => ({
   saveGame: jest.fn(() => Promise.resolve(false)),
@@ -79,5 +79,47 @@ describe('gameStore', () => {
     expect(saves).toBeGreaterThanOrEqual(humanTurns);
     expect(saves).toBeLessThanOrEqual(humanTurns + 2);
     expect(actions).toBeGreaterThan(saves * 3);
+  });
+
+  /** Plays (drawing from the deck and discarding for the human) until the human may buy a card. */
+  const playUntilOffered = () => {
+    for (let guard = 0; guard < 3000; guard++) {
+      const game = store().game!;
+      if (game.status !== 'playing') {
+        store().nextRound();
+      } else if (currentPlayer(game).isBot) {
+        store().runBotStep();
+        if (canBuy(store().game!, 'human')) return;
+      } else {
+        store().drawFromDeck();
+        store().toggleCard(discardableCardIds(store().game!, 'human')[0]);
+        store().discardSelection();
+      }
+    }
+    throw new Error('No card was offered');
+  };
+
+  it('lets the human buy the passed-over discard during a bot turn', () => {
+    store().startGame('Ada', 3);
+    playUntilOffered();
+    const offered = buyableCard(store().game!)!;
+    const purseBefore = store().game!.purses.human;
+
+    store().buyDiscard();
+    expect(store().game!.buyWindow!.requests).toContain('human');
+
+    while (store().game!.buyWindow?.cardId === offered.id) store().runBotStep();
+
+    const game = store().game!;
+    const owner = game.players.find((p) => p.hand.some((c) => c.id === offered.id))!;
+    expect(game.log.map((e) => e.message)).toContain(`${owner.name} bought ${cardLabel(offered)} for 10¢.`);
+    if (owner.id === 'human') expect(game.purses.human).toBe(purseBefore - STAKES.buy);
+  });
+
+  it('remembers a declined offer', () => {
+    store().startGame('Ada', 3);
+    playUntilOffered();
+    store().passBuy();
+    expect(store().buyPassedKey).toBe(buyOfferKey(store().game!));
   });
 });
