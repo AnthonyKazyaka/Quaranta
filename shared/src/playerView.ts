@@ -1,5 +1,5 @@
 import { Card } from './cards';
-import { GameLogEntry, GameState, GameStatus, RoundResult, TableMeld, TurnStage } from './game';
+import { GameLogEntry, GameMode, GameState, GameStatus, RoundResult, TableMeld, TurnStage } from './game';
 
 export interface PublicPlayer {
   id: string;
@@ -7,6 +7,15 @@ export interface PublicPlayer {
   isBot: boolean;
   isOpen: boolean;
   handCount: number;
+  /** The opening this player is working on, as an index into `PHASES`. */
+  phaseIndex: number;
+}
+
+/** A discard up for sale. The card is the top of the discard pile, so it's public anyway. */
+export interface PublicBuyOffer {
+  card: Card;
+  eligible: string[];
+  responses: Record<string, 'buy' | 'pass'>;
 }
 
 /**
@@ -17,12 +26,14 @@ export interface PublicPlayer {
 export interface PublicGameView {
   id: string;
   version: number;
+  mode: GameMode;
   players: PublicPlayer[];
   phaseIndex: number;
   dealerIndex: number;
   currentPlayerIndex: number;
   turnStage: TurnStage;
   openedThisTurn: boolean;
+  buyOffer: PublicBuyOffer | null;
   status: GameStatus;
   melds: TableMeld[];
   topDiscard: Card | null;
@@ -42,18 +53,21 @@ export function getPublicView(state: GameState): PublicGameView {
   return {
     id: state.id,
     version: state.version,
+    mode: state.mode,
     players: state.players.map((p) => ({
       id: p.id,
       name: p.name,
       isBot: p.isBot,
       isOpen: p.isOpen,
       handCount: p.hand.length,
+      phaseIndex: p.phaseIndex,
     })),
     phaseIndex: state.phaseIndex,
     dealerIndex: state.dealerIndex,
     currentPlayerIndex: state.currentPlayerIndex,
     turnStage: state.turnStage,
     openedThisTurn: state.openedThisTurn,
+    buyOffer: state.buyOffer,
     status: state.status,
     melds: state.melds,
     topDiscard: state.discardPile[state.discardPile.length - 1] ?? null,

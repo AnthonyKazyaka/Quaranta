@@ -1,15 +1,20 @@
-import { PHASES } from '@quaranta/shared';
+import { GameMode, PHASES } from '@quaranta/shared';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
+import { onlineEnabled } from '@/features';
 import { isFirebaseConfigured } from '@/services/firebase';
 import { SavedGameSummary, listRecentGames } from '@/services/gameRepository';
 import { useGameStore } from '@/stores/gameStore';
 import { colors, radius, spacing } from '@/theme';
 
 const BOT_OPTIONS = [1, 2, 3];
+const MODES: { mode: GameMode; label: string; description: string }[] = [
+  { mode: 'classic', label: 'Classic', description: 'Everyone plays the same opening each hand, eight hands in a row.' },
+  { mode: 'paced', label: 'Own pace', description: 'Move on to the next opening only after a hand where you open. First to finish All Down wins.' },
+];
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -18,6 +23,7 @@ export default function HomeScreen() {
   const startGame = useGameStore((s) => s.startGame);
   const [name, setName] = useState(savedName);
   const [botCount, setBotCount] = useState(3);
+  const [mode, setMode] = useState<GameMode>('classic');
   const [recent, setRecent] = useState<SavedGameSummary[]>([]);
   const cloudEnabled = isFirebaseConfigured();
 
@@ -46,7 +52,7 @@ export default function HomeScreen() {
           <View style={styles.panel}>
             <Text style={styles.panelTitle}>Game in progress</Text>
             <Text style={styles.muted}>
-              Hand {game.phaseIndex + 1} of {PHASES.length}: {PHASES[game.phaseIndex].name} ·{' '}
+              {game.mode === 'paced' ? `Hand ${game.phaseIndex + 1}` : `Hand ${game.phaseIndex + 1} of ${PHASES.length}: ${PHASES[game.phaseIndex].name}`} ·{' '}
               {game.players.map((p) => p.name).join(', ')}
             </Text>
             <Button label="Continue" onPress={() => router.push('/game')} />
@@ -79,15 +85,38 @@ export default function HomeScreen() {
               </Pressable>
             ))}
           </View>
+          <Text style={styles.label}>Game mode</Text>
+          <View style={styles.segment} accessibilityRole="radiogroup">
+            {MODES.map((option) => (
+              <Pressable
+                key={option.mode}
+                onPress={() => setMode(option.mode)}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: mode === option.mode }}
+                style={[styles.segmentItem, mode === option.mode && styles.segmentActive]}
+              >
+                <Text style={[styles.segmentText, mode === option.mode && styles.segmentTextActive]}>{option.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+          <Text style={styles.muted}>{MODES.find((option) => option.mode === mode)?.description}</Text>
           <Button
             label={canContinue ? 'Start over with a new game' : 'Deal me in'}
             variant={canContinue ? 'secondary' : 'primary'}
             onPress={() => {
-              startGame(name, botCount);
+              startGame(name, botCount, mode);
               router.push('/game');
             }}
           />
         </View>
+
+        {onlineEnabled && (
+          <View style={styles.panel}>
+            <Text style={styles.panelTitle}>Play with friends</Text>
+            <Text style={styles.muted}>Host a table or join one with an invite code. Empty seats are filled by computer players.</Text>
+            <Button label="Play online" variant="secondary" onPress={() => router.push('/online')} />
+          </View>
+        )}
 
         <Button label="How to play" variant="secondary" onPress={() => router.push('/rules')} />
 

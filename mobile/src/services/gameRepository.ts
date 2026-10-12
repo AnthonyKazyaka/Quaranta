@@ -24,7 +24,7 @@ function summarize(game: GameState): Omit<SavedGameSummary, 'id' | 'updatedAt'> 
   return {
     status: game.status,
     phaseIndex: game.phaseIndex,
-    phaseName: PHASES[game.phaseIndex].name,
+    phaseName: game.mode === 'paced' ? 'Own pace' : PHASES[game.phaseIndex].name,
     players: game.players.map((p) => ({ id: p.id, name: p.name, isBot: p.isBot, score: scores[p.id] })),
     winnerNames: game.status === 'gameOver' ? leaders(game).map((p) => p.name) : [],
   };

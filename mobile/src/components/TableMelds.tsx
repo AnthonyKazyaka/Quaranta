@@ -1,11 +1,11 @@
-import { GamePlayer, TableMeld } from '@quaranta/shared';
+import { TableMeld } from '@quaranta/shared';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, radius, spacing } from '@/theme';
 import { PlayingCard } from './PlayingCard';
 
 interface TableMeldsProps {
   melds: TableMeld[];
-  players: GamePlayer[];
+  players: { id: string; name: string }[];
   cardWidth: number;
   /** Tapping a meld plays the selected cards onto it. */
   onMeldPress?: (meldId: string) => void;

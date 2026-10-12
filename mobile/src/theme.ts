@@ -12,6 +12,8 @@ export const colors = {
   text: '#f5f3e8',
   textMuted: '#b9cdbf',
   danger: '#ff8a7a',
+  success: '#7be39a',
+  dangerSurface: '#5a1f1f',
   cardFace: '#fffdf7',
   cardBorder: '#d8d2c0',
   cardRed: '#c62828',

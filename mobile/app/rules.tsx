@@ -13,6 +13,19 @@ const TURN_RULES = [
   'The first player to get rid of every card goes out and ends the hand.',
 ];
 
+const BUYING_RULES = [
+  "When the player to the discarder's left draws from the deck instead of taking the top discard, everyone else gets a chance to buy that discard first. The card they passed up is up for sale.",
+  "A buyer takes just that card into their hand, and then everyone carries on. It doesn't change whose turn it is.",
+  "If several people want it, the player closest to the current player's left in turn order gets it. The player who threw the card can't buy it back.",
+  "The first card turned up at the start of a hand and jokers can't be bought. There's no limit on how often you can buy.",
+];
+
+const OWN_PACE_RULES = [
+  'Each player works on their own opening. Everyone starts with High Pair.',
+  "After a hand in which you opened, you move on to the next opening. If you didn't open, you try the same one again.",
+  'The game ends after the hand in which someone opens with All Down, or after 20 hands. The player who completed the most openings wins, and points break ties.',
+];
+
 const SCORING = [
   '2 through 10: face value',
   'Jacks, Queens and Kings: 10',
@@ -60,6 +73,30 @@ export default function RulesScreen() {
           ))}
         </Section>
 
+        <Section title="Buying">
+          {BUYING_RULES.map((rule) => (
+            <Text key={rule} style={styles.bullet}>
+              • {rule}
+            </Text>
+          ))}
+        </Section>
+
+        <Section title="Own pace mode">
+          {OWN_PACE_RULES.map((rule) => (
+            <Text key={rule} style={styles.bullet}>
+              • {rule}
+            </Text>
+          ))}
+        </Section>
+
+        <Section title="Playing online">
+          <Text style={styles.body}>
+            Host a table or join with a four-letter invite code. Every turn has a time limit; if you run out, a computer
+            player plays your turn, and after two missed turns it takes your seat until you tap I&apos;m back. Empty seats can be
+            filled with computer players.
+          </Text>
+        </Section>
+
         <Section title="Scoring">
           <Text style={styles.body}>When someone goes out, everyone else scores the cards left in their hand:</Text>
           {SCORING.map((rule) => (
@@ -67,7 +104,7 @@ export default function RulesScreen() {
               • {rule}
             </Text>
           ))}
-          <Text style={styles.body}>After eight hands, the lowest total wins.</Text>
+          <Text style={styles.body}>After eight hands, the lowest total wins (in Own pace mode, see above).</Text>
         </Section>
 
         <Button label="Back" onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />

@@ -20,19 +20,24 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   orientation: 'default',
   userInterfaceStyle: 'dark',
   backgroundColor: '#0f3d24',
+  icon: './assets/icon.png',
   ios: {
     supportsTablet: true,
     bundleIdentifier: 'com.justaskinteractive.quaranta',
   },
   android: {
     package: 'com.justaskinteractive.quaranta',
-    adaptiveIcon: { backgroundColor: '#0f3d24' },
+    adaptiveIcon: { foregroundImage: './assets/adaptive-icon.png', backgroundColor: '#0f3d24' },
   },
   web: {
     bundler: 'metro',
     output: 'single',
+    favicon: './assets/favicon.png',
   },
-  plugins: ['expo-router'],
+  plugins: [
+    'expo-router',
+    ['expo-splash-screen', { image: './assets/splash-icon.png', imageWidth: 240, backgroundColor: '#0f3d24', resizeMode: 'contain' }],
+  ],
   experiments: {
     typedRoutes: true,
   },

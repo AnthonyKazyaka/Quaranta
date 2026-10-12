@@ -1,6 +1,6 @@
 # Online multiplayer plan
 
-Status: Milestone 0 done (emulator setup moved to Milestone 1). Validation spike results below.
+Status: Milestone 0 done (emulator setup moved to Milestone 1). The screens for Milestones 2 to 5 are built against a mock backend (see "Mock layer" below); the Firebase backend is not started. Validation spike results below.
 
 ## Goal
 
@@ -90,8 +90,26 @@ Security rules for this are small: everything is read-only to clients except thr
 1. `getPlayerView(state, playerId)`: the redacted view, promoted from the spike, with tests asserting nothing hidden leaks.
 2. `version` on `GameState`, incremented by every action, for optimistic concurrency and stale-move rejection.
 3. Seats keyed by Firebase uid (`PlayerSetup.id` already allows custom ids).
-4. **Buying**: the out-of-turn rule (README to-do). Needs a short "buy window" in the turn state and a priority order when several players want the same card. This is the rule most affected by network latency, so it should be designed for multiplayer from the start.
+4. **Buying** (done): `GameState.buyOffer` holds the discard for sale, the players who may buy it in priority order, and their answers. The `buy` and `passBuy` actions can arrive in any order and the offer resolves as soon as the highest-priority buyer is known, so it doesn't depend on who answers first over the network. `actorsToMove(state)` says whom the game is waiting on, which is what the server needs to set a turn clock. Rules chosen: a buyer takes just the card (no penalty), the discarder can't buy it back, no jokers or first card, no limit on buys.
 5. Keep time out of the engine; Functions own deadlines and timestamps.
+
+## Mock layer (what exists today)
+
+Everything the app needs from the network goes through `OnlineService` (`mobile/src/services/online/types.ts`): `createTable`, `joinTable`, `startGame`, `setSeat`, `submitAction`, `leaveTable`, `resumeSeat`, `listMyTables` and `subscribe`. `MockOnlineService` implements it in memory using the real engine (`applyAction`, `getPlayerView`, `chooseBotAction`) so the screens and stores behave as they will against Functions and Firestore:
+
+- Latency on every call, snapshots pushed to subscribers, out-of-order snapshots ignored by version.
+- `submitAction` rejects stale turn moves (`expectedVersion`), moves for other players, and rule violations (surfaced as the engine's message). Buy answers skip the version check because they're concurrent by design.
+- Turn clocks: one per turn (or per 15 s buy window); when it runs out a bot plays the turn, and after two missed turns the seat is taken over until the player taps "I'm back".
+- Presence and reconnecting: the demo controls drop the connection (calls fail with `offline`, the UI locks) and bring it back (the client catches up from one snapshot).
+- Simulated friends who join, play at human speed and can be frozen; seeded tables `DEMO`, `FULL` and `DONE` for the join flows and errors.
+
+Screens: `app/online/index.tsx` (host/join/resume, account and turn-alert settings), `app/online/[gameId].tsx` (lobby, then the table via the shared `GameTable`). State lives in `onlineStore.ts`; both it and the single-player store share `tableSlice.ts` for selection and move-building.
+
+Still to do for the real thing: the Firebase `OnlineService` (Milestone 1 and 3), server-side turn clocks (Cloud Tasks or a sweep), Realtime Database presence, Google sign-in via `linkWithCredential` (the hub's button is a stub in `services/account.ts`), push notifications (today's alert is an in-app toast, `onlineStore.nudge`), and App Check.
+
+### Defaults chosen for the open decisions
+
+These keep the demo moving and are all easy to change: live games with 15 s to 2 min turns (decision 2), anonymous play with a stubbed Google link (3), the buying rules above (4), and 2 to 4 seats (5). Decision 1 (Blaze) still blocks the real backend.
 
 ## Milestones
 
@@ -106,17 +124,17 @@ Security rules for this are small: everything is read-only to clients except thr
 
 | # | Scope | Needs Blaze |
 | --- | --- | --- |
-| 0 | Engine prep (the list above, minus buying); cut single-player save writes | No |
+| 0 | Engine prep (the list above, plus buying); cut single-player save writes. **Done** | No |
 | 1 | Firestore emulator (needs a JDK locally, or CI only) with rules tests; `functions/` package: esbuild bundle of `@quaranta/shared`, `submitAction` with transactions, emulator tests, CI | Yes |
-| 2 | Lobby UI: create, share code, join, seat list, start with bot fill | Yes |
-| 3 | In-game sync: subscribe to the public doc and own hand; server-confirmed moves with pending states | Yes |
-| 4 | Timeouts and bot takeover, reconnect, presence (Realtime Database `onDisconnect`) | Yes |
-| 5 | Buying rule, turn notifications (Expo push / FCM), Google sign-in linked to the anonymous account for cross-device identity, App Check | Yes |
+| 2 | Lobby UI: create, share code, join, seat list, start with bot fill. **UI done on the mock**; needs the real service | Yes (backend) |
+| 3 | In-game sync: subscribe to the public doc and own hand; server-confirmed moves with pending states. **UI done on the mock** | Yes (backend) |
+| 4 | Timeouts and bot takeover, reconnect, presence (Realtime Database `onDisconnect`). **UI and behaviour done on the mock**; server timers and presence still to build | Yes (backend) |
+| 5 | Buying rule (**engine and UI done**), turn notifications (Expo push / FCM; in-app toast done), Google sign-in linked to the anonymous account (stub done), App Check | Yes (backend) |
 
 ## Decisions needed
 
 1. **Upgrade to Blaze** so Functions can run (needs a billing account; only the project owner can do this in the console).
 2. **Live or asynchronous games?** Live (minutes-long turn timer, everyone online) is simpler. Async (hours to move, notifications) changes timers and makes push notifications essential.
 3. **Identity:** stay anonymous for the first release, or add Google sign-in now so games follow players across devices?
-4. **Buying rule details:** who gets priority, whether a buy costs a penalty card, and any limit per hand.
+4. **Buying rule details:** who gets priority (a buy takes just the one card, with no limit per hand).
 5. **Seat count online:** 2 to 4 (matches the app today) or up to 6 (the engine supports it).

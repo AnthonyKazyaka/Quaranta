@@ -3,9 +3,11 @@ import {
   GameAction,
   GamePlayer,
   GameState,
-  currentPhase,
-  currentPlayer,
+  actorsToMove,
+  buyBlockReason,
   discardableCardIds,
+  getPlayer,
+  phaseOf,
   topDiscard,
 } from './game';
 import {
@@ -265,7 +267,7 @@ function keepScore(card: Card, hand: Card[], weights: { rank: number; suit: numb
 function chooseDiscard(state: GameState, player: GamePlayer): string {
   const allowed = new Set(discardableCardIds(state, player.id));
   const options = player.hand.filter((c) => allowed.has(c.id));
-  const weights = player.isOpen ? OPEN_WEIGHTS : OPENING_WEIGHTS[currentPhase(state).condition];
+  const weights = player.isOpen ? OPEN_WEIGHTS : OPENING_WEIGHTS[phaseOf(player).condition];
   options.sort((a, b) => keepScore(a, player.hand, weights) - keepScore(b, player.hand, weights));
   return options[0].id;
 }
@@ -288,22 +290,41 @@ function shouldTakeDiscard(state: GameState, player: GamePlayer): boolean {
     return state.melds.some((m) => tryAddToMeld(m, [card])) || formsNewMeld(card, player.hand);
   }
 
-  const condition = currentPhase(state).condition;
+  const condition = phaseOf(player).condition;
   if (isJoker(card) && condition !== 'allDown') return false;
   return findOpeningMelds([...player.hand, card], condition) !== null;
 }
 
-/** Decides the next action for the bot whose turn it is. Call repeatedly until the turn passes. */
-export function chooseBotAction(state: GameState): GameAction {
-  const player = currentPlayer(state);
-  const playerId = player.id;
+/** Bots only buy a card that really helps them. */
+function shouldBuy(state: GameState, player: GamePlayer): boolean {
+  const card = state.buyOffer?.card;
+  if (!card || buyBlockReason(state, player.id)) return false;
+
+  if (player.isOpen) {
+    return state.melds.some((m) => tryAddToMeld(m, [card])) || formsNewMeld(card, player.hand);
+  }
+  const condition = phaseOf(player).condition;
+  return findOpeningMelds(player.hand, condition) === null && findOpeningMelds([...player.hand, card], condition) !== null;
+}
+
+/**
+ * Decides the next action for a bot. By default that's the first player the game is waiting on:
+ * the bot whose turn it is, or a bot deciding whether to buy a discard. Call repeatedly until
+ * the turn passes.
+ */
+export function chooseBotAction(state: GameState, playerId: string = actorsToMove(state)[0]): GameAction {
+  const player = getPlayer(state, playerId);
+
+  if (state.buyOffer) {
+    return { type: shouldBuy(state, player) ? 'buy' : 'passBuy', playerId };
+  }
 
   if (state.turnStage === 'draw') {
     return shouldTakeDiscard(state, player) ? { type: 'drawFromDiscard', playerId } : { type: 'drawFromDeck', playerId };
   }
 
   if (!player.isOpen) {
-    const opening = findOpeningMelds(player.hand, currentPhase(state).condition);
+    const opening = findOpeningMelds(player.hand, phaseOf(player).condition);
     if (opening) return { type: 'open', playerId, melds: opening };
     return { type: 'discard', playerId, cardId: chooseDiscard(state, player) };
   }
@@ -326,4 +347,14 @@ export function chooseBotAction(state: GameState): GameAction {
   }
 
   return { type: 'discard', playerId, cardId: chooseDiscard(state, player) };
+}
+
+/**
+ * A move that's always legal for the player the game is waiting on: pass on a buy, draw from the
+ * deck, or throw away a card. For when a bot's usual choice is rejected or a turn has to be ended.
+ */
+export function safeBotAction(state: GameState, playerId: string): GameAction {
+  if (state.buyOffer) return { type: 'passBuy', playerId };
+  if (state.turnStage === 'draw') return { type: 'drawFromDeck', playerId };
+  return { type: 'discard', playerId, cardId: discardableCardIds(state, playerId)[0] };
 }

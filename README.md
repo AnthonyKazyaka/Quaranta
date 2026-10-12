@@ -55,15 +55,33 @@ Data model: `users/{uid}/games/{gameId}` holds a summary (status, hand, players,
 - Discard limits: no card that plays on the table, and no high cards in the first two hands until everyone has opened. If every card is blocked, any card may go.
 - Scoring: 2 through 10 at face value, faces 10, Aces 1 (or 11 each if you hold more than one), jokers 25, capped at 100 per hand. In All Down, anyone holding cards takes 100.
 
+Buying: when the current player draws from the deck instead of taking the top discard, the other players may buy that discard before play continues (never the first card turned up or a joker). The buyer takes just that card. If several players want it, whoever is closest to the current player's left wins; the player who threw it can't buy it back. There's no limit on how many times a player can buy.
+
+Own pace mode (the alternative to Classic): each player works through the openings at their own pace. After a hand in which you opened you move on to your next opening; otherwise you try the same one again. The game ends after the hand in which someone opens with All Down (or after 20 hands), and whoever completed the most openings wins, with points breaking ties.
+
 House rules added during the port (easy to change in `shared/src/game.ts`):
 
 - Runs can play an Ace low or high but don't wrap (K-A-2).
 - A player can also go out by melding their last card rather than discarding it.
 - If the deck runs out a third time in one hand, the hand ends with nobody going out.
 
+## Online play (demo)
+
+Online play shows only in development builds (`__DEV__`), or in any build with `EXPO_PUBLIC_ENABLE_ONLINE_DEMO=true`, until the real backend replaces the mock.
+
+The screens for online play are built and playable, but the network layer is a stand-in: `MockOnlineService` (`mobile/src/services/online/`) runs the real engine in memory and simulates latency, friends who join and play, turn timers with bot takeover, and dropped connections. From the home screen, **Play online** lets you host a table (2 to 4 seats, either mode, 15 s to 2 min per turn) or join with a code. Try these codes:
+
+| Code | What happens |
+| ---- | ------------ |
+| `DEMO` | Joins a table hosted by a pretend friend, who starts the game a few seconds later |
+| `FULL` | "That table is full" |
+| `DONE` | "That game has already started" |
+
+Inside a game, **Demo controls** drops your connection or freezes a friend so you can see the reconnect and bot-takeover flows. The real backend (Cloud Functions plus Firestore) is planned in [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md); it only has to implement the `OnlineService` interface in `mobile/src/services/online/types.ts`.
+
 ## To do
 
-- [ ] Buying: other players may take the top discard when the current player draws from the deck (not on the first card or a joker).
-- [ ] Online multiplayer. The engine's action-based, serializable state is designed for it; hands would need to move out of the shared game document.
-- [ ] Alternate mode where each player works through the openings at their own pace.
-- [ ] App icon and splash art.
+- [ ] Real online multiplayer backend: Cloud Functions and Firestore behind `OnlineService`, replacing the mock (needs the Blaze plan; see docs/MULTIPLAYER.md).
+- [ ] Real Google sign-in linking and push notifications for turns (both are demo stand-ins today).
+- [ ] Final art pass on the app icon and splash (first version is in `mobile/assets/`).
+- [ ] Custom game variants, later. For example a configurable penalty-card count. That would mean a serializable `rules` object on `GameState`, set in `createGame`. The main game comes first.
