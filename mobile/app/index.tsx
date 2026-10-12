@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Button } from '@/components/Button';
-import { Appear, prefersReducedMotion, useNativeDriver } from '@/components/motion';
+import { Appear, PressState, prefersReducedMotion, useNativeDriver } from '@/components/motion';
 import { PlayingCard } from '@/components/PlayingCard';
 import { Screen } from '@/components/Screen';
 import { isFirebaseConfigured } from '@/services/firebase';
@@ -95,7 +95,7 @@ export default function HomeScreen() {
                   accessibilityRole="radio"
                   accessibilityState={{ checked: botCount === count }}
                   accessibilityLabel={`${count} ${count === 1 ? 'opponent' : 'opponents'}`}
-                  style={({ hovered }: { hovered?: boolean }) => [
+                  style={({ hovered }: PressState) => [
                     styles.segmentItem,
                     hovered && styles.segmentHover,
                     botCount === count && styles.segmentActive,

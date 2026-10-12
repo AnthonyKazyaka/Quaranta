@@ -1,5 +1,8 @@
 import { ReactNode, useEffect, useRef } from 'react';
-import { AccessibilityInfo, Animated, Easing, Platform, StyleProp, ViewStyle } from 'react-native';
+import { AccessibilityInfo, Animated, Easing, Platform, PressableStateCallbackType, StyleProp, ViewStyle } from 'react-native';
+
+/** Pressable's style-callback state. React Native Web also reports `hovered` under a mouse. */
+export type PressState = PressableStateCallbackType & { hovered?: boolean };
 
 /** The web has no native animation module; Animated runs on the JS thread there. */
 export const useNativeDriver = Platform.OS !== 'web';

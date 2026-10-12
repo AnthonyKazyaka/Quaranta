@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { Animated, Pressable, StyleSheet, Text, ViewStyle } from 'react-native';
 import { colors, radius, spacing } from '@/theme';
-import { prefersReducedMotion, useNativeDriver } from './motion';
+import { PressState, prefersReducedMotion, useNativeDriver } from './motion';
 
 interface ButtonProps {
   label: string;
@@ -30,7 +30,7 @@ export function Button({ label, onPress, variant = 'primary', disabled, style, c
         accessibilityRole="button"
         accessibilityState={{ disabled: !!disabled }}
         accessibilityHint={accessibilityHint}
-        style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
+        style={({ pressed, hovered }: PressState) => [
           styles.base,
           compact && styles.compact,
           styles[variant],

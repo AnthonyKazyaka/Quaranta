@@ -5,7 +5,7 @@ import { Animated, Pressable, ScrollView, StyleSheet, Text, View } from 'react-n
 import { Button } from '@/components/Button';
 import { BuyOffer } from '@/components/BuyOffer';
 import { feedback } from '@/components/feedback';
-import { Appear, ThinkingDots, useShake } from '@/components/motion';
+import { Appear, PressState, ThinkingDots, useShake } from '@/components/motion';
 import { Piles } from '@/components/Piles';
 import { PlayerStrip } from '@/components/PlayerStrip';
 import { PlayingCard } from '@/components/PlayingCard';
@@ -255,7 +255,7 @@ export default function GameScreen() {
                   onPress={() => store.unstageMeld(index)}
                   accessibilityRole="button"
                   accessibilityLabel={`Opening group ${index + 1}, tap to return to hand`}
-                  style={({ hovered }: { hovered?: boolean }) => [styles.stagedGroup, hovered && styles.stagedHover]}
+                  style={({ hovered }: PressState) => [styles.stagedGroup, hovered && styles.stagedHover]}
                 >
                   {group.map((id) => {
                     const card = byId.get(id);

@@ -1,7 +1,7 @@
 import { GamePlayer, TableMeld } from '@quaranta/shared';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, radius, seatColor, spacing } from '@/theme';
-import { Appear, usePulse } from './motion';
+import { Appear, PressState, usePulse } from './motion';
 import { PlayingCard } from './PlayingCard';
 
 interface TableMeldsProps {
@@ -49,7 +49,7 @@ export function TableMelds({ melds, players, cardWidth, onMeldPress, highlight, 
                     accessibilityRole="button"
                     accessibilityLabel={`${player.name}'s ${meld.kind} of ${meld.cards.length} cards`}
                     accessibilityHint="Plays your selected cards on this meld"
-                    style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
+                    style={({ pressed, hovered }: PressState) => [
                       styles.meld,
                       highlight && styles.meldTarget,
                       highlight && hovered && styles.meldHover,

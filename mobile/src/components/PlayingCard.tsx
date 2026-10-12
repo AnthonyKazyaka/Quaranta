@@ -2,7 +2,7 @@ import { Card, Rank, SUIT_SYMBOLS, Suit, isRedSuit, rankLabel } from '@quaranta/
 import { useRef } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, fonts, shadows } from '@/theme';
-import { prefersReducedMotion, useNativeDriver, useSpring } from './motion';
+import { PressState, prefersReducedMotion, useNativeDriver, useSpring } from './motion';
 
 interface PlayingCardProps {
   card: Card;
@@ -72,7 +72,7 @@ export function PlayingCard({ card, width, selected, dimmed, onPress, accessibil
       accessibilityLabel={cardAccessibilityLabel(card)}
       accessibilityHint={accessibilityHint}
       accessibilityState={{ selected: !!selected }}
-      style={({ hovered }: { hovered?: boolean }) => [hovered && !selected && styles.hovered]}
+      style={({ hovered }: PressState) => [hovered && !selected && styles.hovered]}
     >
       <Animated.View
         style={{

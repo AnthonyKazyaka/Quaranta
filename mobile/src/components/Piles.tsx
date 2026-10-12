@@ -2,7 +2,7 @@ import { GameState, canDrawFromDeck, formatCents, topDiscard } from '@quaranta/s
 import { ReactNode } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, radius, shadows, spacing } from '@/theme';
-import { Appear, usePulse } from './motion';
+import { Appear, PressState, usePulse } from './motion';
 import { CardBack, PlayingCard, cardHeight } from './PlayingCard';
 
 interface PilesProps {
@@ -100,7 +100,7 @@ function Pile({ label, badge, highlight, active, pulse, onPress, accessibilityLa
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       accessibilityState={{ disabled: !active }}
-      style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
+      style={({ hovered, pressed }: PressState) => [
         styles.pile,
         active && hovered && styles.pileHover,
         active && pressed && styles.pilePressed,
