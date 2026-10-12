@@ -42,6 +42,25 @@ describe('createGame', () => {
   it('rejects too few players', () => {
     expect(() => createGame({ players: [{ name: 'Solo', isBot: false }] })).toThrow();
   });
+
+  it('keeps custom player ids, such as Firebase uids, and rejects duplicates', () => {
+    const state = createGame({
+      seed: 1,
+      players: [
+        { id: 'uid-1', name: 'A', isBot: false },
+        { id: 'uid-2', name: 'B', isBot: false },
+      ],
+    });
+    expect(state.players.map((p) => p.id)).toEqual(['uid-1', 'uid-2']);
+    expect(() =>
+      createGame({
+        players: [
+          { id: 'same', name: 'A', isBot: false },
+          { id: 'same', name: 'B', isBot: false },
+        ],
+      }),
+    ).toThrow(/different id/);
+  });
 });
 
 describe('turns', () => {
@@ -62,6 +81,15 @@ describe('turns', () => {
     state = applyAction(state, { type: 'discard', playerId: player.id, cardId: currentPlayer(state).hand[0].id });
     expect(currentPlayer(state).id).not.toBe(player.id);
     expect(state.turnStage).toBe('draw');
+  });
+
+  it('counts every action in the version', () => {
+    let state = twoPlayers();
+    expect(state.version).toBe(0);
+    state = applyAction(state, { type: 'drawFromDeck', playerId: currentPlayer(state).id });
+    expect(state.version).toBe(1);
+    expect(() => applyAction(state, { type: 'drawFromDeck', playerId: currentPlayer(state).id })).toThrow();
+    expect(state.version).toBe(1);
   });
 
   it('takes the top discard', () => {

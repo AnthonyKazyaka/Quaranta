@@ -54,6 +54,8 @@ export type TurnStage = 'draw' | 'play';
  */
 export interface GameState {
   id: string;
+  /** Incremented by every action, so a client can tell whether its view is stale. */
+  version: number;
   players: GamePlayer[];
   phaseIndex: number;
   dealerIndex: number;
@@ -179,11 +181,16 @@ export function createGame({ players, id, seed = randomSeed() }: CreateGameOptio
   if (players.length < MIN_PLAYERS || players.length > MAX_PLAYERS) {
     fail(`Quaranta needs ${MIN_PLAYERS} to ${MAX_PLAYERS} players.`);
   }
+  const ids = players.map((p, i) => p.id ?? `p${i + 1}`);
+  if (new Set(ids).size !== ids.length) {
+    fail('Every player needs a different id.');
+  }
 
   const state: GameState = {
     id: id ?? `game-${seed.toString(36)}`,
+    version: 0,
     players: players.map((p, i) => ({
-      id: p.id ?? `p${i + 1}`,
+      id: ids[i],
       name: p.name,
       isBot: p.isBot,
       hand: [],
@@ -442,6 +449,11 @@ function nextRound(state: GameState): GameState {
 
 /** Applies an action to the game, returning the new state. Throws `GameRuleError` for illegal moves. */
 export function applyAction(state: GameState, action: GameAction): GameState {
+  const next = reduce(state, action);
+  return { ...next, version: (state.version ?? 0) + 1 };
+}
+
+function reduce(state: GameState, action: GameAction): GameState {
   if (action.type === 'nextRound') return nextRound(state);
 
   if (state.status !== 'playing') fail('This hand is over.');

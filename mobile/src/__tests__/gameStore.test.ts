@@ -1,4 +1,5 @@
-import { currentPlayer } from '@quaranta/shared';
+import { currentPlayer, discardableCardIds } from '@quaranta/shared';
+import { saveGame } from '@/services/gameRepository';
 import { useGameStore } from '@/stores/gameStore';
 
 jest.mock('@/services/gameRepository', () => ({
@@ -11,6 +12,7 @@ const store = () => useGameStore.getState();
 describe('gameStore', () => {
   beforeEach(() => {
     store().quitGame();
+    jest.mocked(saveGame).mockClear();
   });
 
   it('starts a game against the requested number of bots', () => {
@@ -51,5 +53,31 @@ describe('gameStore', () => {
     store().discardSelection();
     expect(store().game!.players.find((p) => p.id === 'human')!.hand).toHaveLength(13);
     expect(store().selectedIds).toEqual([]);
+  });
+
+  it('saves to the cloud once per human turn, not after every bot move', () => {
+    store().startGame('Ada', 3);
+    let humanTurns = 0;
+    let actions = 0;
+
+    while (humanTurns < 12 && store().game!.status === 'playing') {
+      const game = store().game!;
+      if (currentPlayer(game).isBot) {
+        store().runBotStep();
+      } else {
+        humanTurns++;
+        store().drawFromDeck();
+        const cardId = discardableCardIds(store().game!, 'human')[0];
+        store().toggleCard(cardId);
+        store().discardSelection();
+      }
+      actions++;
+    }
+
+    const saves = jest.mocked(saveGame).mock.calls.length;
+    // One save when the game starts, then one each time play comes back to the human.
+    expect(saves).toBeGreaterThanOrEqual(humanTurns);
+    expect(saves).toBeLessThanOrEqual(humanTurns + 2);
+    expect(actions).toBeGreaterThan(saves * 3);
   });
 });

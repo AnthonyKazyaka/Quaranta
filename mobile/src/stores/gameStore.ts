@@ -56,8 +56,16 @@ interface GameStore {
   runBotStep: () => void;
 }
 
-/** Actions after which the game is worth saving to the cloud. */
-const SAVE_ON: GameAction['type'][] = ['open', 'discard', 'nextRound'];
+/**
+ * Cloud saves happen when a hand starts or ends and when play comes back around to the human,
+ * rather than after every move: about 70 writes a game instead of 280. The device keeps the
+ * latest state either way.
+ */
+function shouldSaveToCloud(previous: GameState, next: GameState, humanId: string | null): boolean {
+  if (next.status !== previous.status) return true;
+  const turnPassed = next.currentPlayerIndex !== previous.currentPlayerIndex;
+  return turnPassed && next.status === 'playing' && currentPlayer(next).id === humanId;
+}
 
 export const useGameStore = create<GameStore>()(
   persist(
@@ -88,7 +96,7 @@ export const useGameStore = create<GameStore>()(
           botActionsThisTurn: turnPassed ? 0 : get().botActionsThisTurn,
         });
 
-        if (SAVE_ON.includes(action.type) || next.status !== game.status) {
+        if (shouldSaveToCloud(game, next, get().humanId)) {
           void saveGame(next, createdAt ?? Date.now());
         }
         return true;
@@ -232,6 +240,15 @@ export const useGameStore = create<GameStore>()(
     {
       name: 'quaranta-game',
       storage: createJSONStorage(() => AsyncStorage),
+      version: 1,
+      // v0 games predate GameState.version and GameState.reshuffles.
+      migrate: (persisted, fromVersion) => {
+        const state = persisted as { game: GameState | null };
+        if (fromVersion < 1 && state.game) {
+          state.game = { ...state.game, version: state.game.version ?? 0, reshuffles: state.game.reshuffles ?? 0 };
+        }
+        return state as GameStore;
+      },
       partialize: (state) => ({
         game: state.game,
         humanId: state.humanId,
