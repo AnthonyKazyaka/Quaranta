@@ -1,4 +1,4 @@
-import { Card, PHASES } from '@quaranta/shared';
+import { Card, GameMode, PHASES } from '@quaranta/shared';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -6,12 +6,18 @@ import { Button } from '@/components/Button';
 import { Appear, PressState, prefersReducedMotion, useNativeDriver } from '@/components/motion';
 import { PlayingCard } from '@/components/PlayingCard';
 import { Screen } from '@/components/Screen';
+import { BOT_NAMES } from '@/botNames';
+import { onlineEnabled } from '@/features';
 import { isFirebaseConfigured } from '@/services/firebase';
 import { SavedGameSummary, listRecentGames } from '@/services/gameRepository';
-import { BOT_NAMES, useGameStore } from '@/stores/gameStore';
+import { useGameStore } from '@/stores/gameStore';
 import { colors, fonts, radius, seatColor, spacing } from '@/theme';
 
 const BOT_OPTIONS = [1, 2, 3];
+const MODES: { mode: GameMode; label: string; description: string }[] = [
+  { mode: 'classic', label: 'Classic', description: 'Everyone plays the same opening each hand, eight hands in a row.' },
+  { mode: 'paced', label: 'Own pace', description: 'Move on to the next opening only after a hand where you open. First to finish All Down wins.' },
+];
 
 const HERO_CARDS: Card[] = [
   { id: 'hero-q', joker: false, suit: 'hearts', rank: 12 },
@@ -27,6 +33,7 @@ export default function HomeScreen() {
   const startGame = useGameStore((s) => s.startGame);
   const [name, setName] = useState(savedName);
   const [botCount, setBotCount] = useState(3);
+  const [mode, setMode] = useState<GameMode>('classic');
   const [recent, setRecent] = useState<SavedGameSummary[]>([]);
   const cloudEnabled = isFirebaseConfigured();
 
@@ -65,7 +72,7 @@ export default function HomeScreen() {
               </Text>
             </View>
             <Text style={styles.muted}>
-              {PHASES[game.phaseIndex].name} · {game.players.map((p) => p.name).join(', ')}
+              {game.mode === 'paced' ? 'Own pace' : PHASES[game.phaseIndex].name} · {game.players.map((p) => p.name).join(', ')}
             </Text>
             <Button label="Continue game" onPress={() => router.push('/game')} />
           </Appear>
@@ -114,15 +121,44 @@ export default function HomeScreen() {
               ))}
             </View>
           </View>
+          <View style={styles.field}>
+            <Text style={styles.label}>Game mode</Text>
+            <View style={styles.segment} accessibilityRole="radiogroup">
+              {MODES.map((option) => (
+                <Pressable
+                  key={option.mode}
+                  onPress={() => setMode(option.mode)}
+                  accessibilityRole="radio"
+                  accessibilityState={{ checked: mode === option.mode }}
+                  style={({ hovered }: PressState) => [
+                    styles.segmentItem,
+                    hovered && styles.segmentHover,
+                    mode === option.mode && styles.segmentActive,
+                  ]}
+                >
+                  <Text style={[styles.segmentText, mode === option.mode && styles.segmentTextActive]}>{option.label}</Text>
+                </Pressable>
+              ))}
+            </View>
+            <Text style={styles.muted}>{MODES.find((option) => option.mode === mode)?.description}</Text>
+          </View>
           <Button
             label={canContinue ? 'Start over with a new game' : 'Deal me in'}
             variant={canContinue ? 'secondary' : 'primary'}
             onPress={() => {
-              startGame(name, botCount);
+              startGame(name, botCount, mode);
               router.push('/game');
             }}
           />
         </Appear>
+
+        {onlineEnabled && (
+          <Appear delay={430} style={styles.panel}>
+            <Text style={styles.panelTitle}>Play with friends</Text>
+            <Text style={styles.muted}>Host a table or join one with an invite code. Empty seats are filled by computer players.</Text>
+            <Button label="Play online" variant="secondary" onPress={() => router.push('/online')} />
+          </Appear>
+        )}
 
         <Appear delay={460}>
           <Button label="How to play" variant="ghost" onPress={() => router.push('/rules')} />

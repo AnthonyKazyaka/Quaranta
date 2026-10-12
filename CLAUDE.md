@@ -16,6 +16,7 @@ Quaranta is a rummy card game. npm workspaces, no `packages/` folder:
 - Size layout with `useLayout()` / `useWindowDimensions()`; breakpoints are `width >= 900` (large) and `width >= 600` (tablet), same as Lawnscapers. Never hardcode layout-critical pixel sizes.
 - Colors come from `mobile/src/theme.ts`.
 - Firebase is optional: every Firebase call goes through `src/services/` and must degrade to offline play when config or sign-in is missing.
+- Online play goes through the `OnlineService` interface in `mobile/src/services/online/`. Today that's `MockOnlineService`; keep screens and stores talking to the interface so the Firebase version can replace it.
 - Rules changes go in `shared/` with tests in `shared/src/__tests__/`. Opening condition fixtures were ported from the original C# xUnit suite.
 
 ## Validation

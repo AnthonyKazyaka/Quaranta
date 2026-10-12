@@ -167,11 +167,11 @@ describe('bot buying', () => {
 
   it('stops building toward its opening when an opponent is about to go out', () => {
     const base = scenario(['2C 3D', '4D 4S 9C', '5S'], '9C 4H');
-    const state = draw({ ...base, phaseIndex: 2, players: base.players.map((p, i) => ({ ...p, isOpen: i === 2 })) });
+    const state = draw({ ...base, phaseIndex: 2, players: base.players.map((p, i) => ({ ...p, phaseIndex: 2, isOpen: i === 2 })) });
     // 4H would make three of a kind, which still gets bought.
     expect(chooseBotBuy(state, 'p2')).toBe(true);
 
-    const pairOnly = draw({ ...base, phaseIndex: 2, discardPile: parseCards('9C 9H'), players: base.players.map((p, i) => ({ ...p, isOpen: i === 2 })) });
+    const pairOnly = draw({ ...base, phaseIndex: 2, discardPile: parseCards('9C 9H'), players: base.players.map((p, i) => ({ ...p, phaseIndex: 2, isOpen: i === 2 })) });
     expect(chooseBotBuy(pairOnly, 'p2')).toBe(false);
   });
 

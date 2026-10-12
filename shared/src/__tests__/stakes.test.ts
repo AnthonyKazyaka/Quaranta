@@ -60,7 +60,10 @@ describe('stakes', () => {
     const lastHand = (scores: number[]): GameState => ({
       ...goingOut(threePlayers()),
       phaseIndex: 7,
-      results: [{ phaseIndex: 6, winnerId: null, points: { p1: scores[0], p2: scores[1], p3: scores[2] }, pot: 0 }],
+      players: goingOut(threePlayers()).players.map((p) => ({ ...p, phaseIndex: 7 })),
+      results: [
+        { phaseIndex: 6, winnerId: 'p1', points: { p1: scores[0], p2: scores[1], p3: scores[2] }, pot: 0, phases: {}, opened: [] },
+      ],
     });
 
     const solo = discardFirst(lastHand([10, 40, 60]));

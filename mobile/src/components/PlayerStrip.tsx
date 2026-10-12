@@ -1,22 +1,38 @@
-import { GamePlayer, GameState, formatCents, totalScores } from '@quaranta/shared';
+import { PHASES, PublicGameView, PublicPlayer, formatCents, totalScores } from '@quaranta/shared';
 import { Animated, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { colors, radius, seatColor, spacing } from '@/theme';
 import { ThinkingDots, usePulse } from './motion';
 
+/** Online presence for a seat. Seats that aren't listed are treated as always present. */
+export interface SeatStatus {
+  connected: boolean;
+  /** A bot is playing this seat's turns because the player timed out or left. */
+  autoplay: boolean;
+}
+
+interface PlayerStripProps {
+  view: PublicGameView;
+  humanId: string;
+  fill?: boolean;
+  seatStatus?: Record<string, SeatStatus>;
+}
+
 /** Every player's seat: card count, open status and running score, with the active seat lit. */
-export function PlayerStrip({ game, humanId, fill }: { game: GameState; humanId: string; fill?: boolean }) {
-  const scores = totalScores(game);
-  const seats = game.players.map((player, index) => (
+export function PlayerStrip({ view, humanId, fill, seatStatus }: PlayerStripProps) {
+  const scores = totalScores(view);
+  const seats = view.players.map((player, index) => (
     <Seat
       key={player.id}
       player={player}
       index={index}
       score={scores[player.id]}
-      purse={game.purses?.[player.id] ?? 0}
-      isDealer={index === game.dealerIndex}
-      isActive={game.status === 'playing' && index === game.currentPlayerIndex}
+      purse={view.purses[player.id] ?? 0}
+      isDealer={index === view.dealerIndex}
+      isActive={view.status === 'playing' && index === view.currentPlayerIndex}
       isYou={player.id === humanId}
       fill={fill}
+      showPhase={view.mode === 'paced'}
+      status={seatStatus?.[player.id]}
     />
   ));
 
@@ -29,7 +45,7 @@ export function PlayerStrip({ game, humanId, fill }: { game: GameState; humanId:
 }
 
 interface SeatProps {
-  player: GamePlayer;
+  player: PublicPlayer;
   index: number;
   score: number;
   /** Net winnings in cents. */
@@ -38,18 +54,23 @@ interface SeatProps {
   isActive: boolean;
   isYou: boolean;
   fill?: boolean;
+  /** Show which opening the player is working on (own-pace games). */
+  showPhase: boolean;
+  status?: SeatStatus;
 }
 
-function Seat({ player, index, score, purse, isDealer, isActive, isYou, fill }: SeatProps) {
+function Seat({ player, index, score, purse, isDealer, isActive, isYou, fill, showPhase, status }: SeatProps) {
   const glow = usePulse(isActive);
   const accent = seatColor(index);
-  const cards = player.hand.length;
+  const cards = player.handCount;
+  const phase = PHASES[player.phaseIndex];
+  const away = status ? !status.connected : false;
 
   return (
     <View
-      style={[styles.seat, fill && styles.seatFill, isActive && { borderColor: accent }]}
+      style={[styles.seat, fill && styles.seatFill, isActive && { borderColor: accent }, away && styles.away]}
       accessible
-      accessibilityLabel={`${player.name}: ${cards} cards, ${score} points, ${purse < 0 ? 'down' : 'up'} ${formatCents(Math.abs(purse))}${player.isOpen ? ', open' : ''}${isDealer ? ', dealer' : ''}${isActive ? ', playing now' : ''}`}
+      accessibilityLabel={`${player.name}: ${cards} cards, ${score} points, ${purse < 0 ? 'down' : 'up'} ${formatCents(Math.abs(purse))}${showPhase ? `, working on ${phase.name}` : ''}${player.isOpen ? ', open' : ''}${isDealer ? ', dealer' : ''}${isActive ? ', playing now' : ''}${away ? ', disconnected' : ''}${status?.autoplay ? ', a bot is playing for them' : ''}`}
     >
       {isActive && (
         <Animated.View
@@ -71,6 +92,7 @@ function Seat({ player, index, score, purse, isDealer, isActive, isYou, fill }: 
       </View>
       <View style={styles.info}>
         <View style={styles.nameRow}>
+          {status && <View style={[styles.dot, status.connected ? styles.dotOn : styles.dotOff]} />}
           <Text style={styles.name} numberOfLines={1}>
             {isYou ? 'You' : player.name}
           </Text>
@@ -83,11 +105,22 @@ function Seat({ player, index, score, purse, isDealer, isActive, isYou, fill }: 
             {formatCents(purse)}
           </Text>
         </Text>
+        {showPhase && (
+          <Text style={styles.phase} numberOfLines={1}>
+            {phase.name}
+          </Text>
+        )}
       </View>
-      {player.isOpen && (
-        <View style={styles.open}>
-          <Text style={styles.openText}>OPEN</Text>
+      {status?.autoplay ? (
+        <View style={[styles.open, styles.botBadge]}>
+          <Text style={[styles.openText, styles.botText]}>BOT</Text>
         </View>
+      ) : (
+        player.isOpen && (
+          <View style={styles.open}>
+            <Text style={styles.openText}>OPEN</Text>
+          </View>
+        )
       )}
     </View>
   );
@@ -120,6 +153,13 @@ const styles = StyleSheet.create({
   glow: {
     borderRadius: radius.lg,
   },
+  away: { opacity: 0.6 },
+  dot: { width: 8, height: 8, borderRadius: 4 },
+  dotOn: { backgroundColor: colors.success },
+  dotOff: { backgroundColor: colors.danger },
+  phase: { color: colors.textMuted, fontSize: 11, marginTop: 1 },
+  botBadge: { backgroundColor: colors.dangerSoft },
+  botText: { color: colors.danger },
   avatar: {
     width: 32,
     height: 32,

@@ -64,8 +64,25 @@ House rules added during the port (easy to change in `shared/src/game.ts`):
 - A hand only ends when someone goes out. Whenever the deck runs dry, the discards under the top card are shuffled into a new deck; if there's nothing to shuffle, the player takes the top discard.
 - Players tied for first at the end of the game split the payout.
 
+Own pace mode (the alternative to Classic): each player works through the openings at their own pace. After a hand in which you opened you move on to your next opening; otherwise you try the same one again. The game ends after the hand in which someone opens with All Down (or after 20 hands), and whoever completed the most openings wins, with points breaking ties. A variant for custom games, such as a configurable buy penalty, is not built yet.
+
+## Online play (demo)
+
+Online play shows only in development builds (`__DEV__`), or in any build with `EXPO_PUBLIC_ENABLE_ONLINE_DEMO=true`, until the real backend replaces the mock.
+
+The screens for online play are built and playable, but the network layer is a stand-in: `MockOnlineService` (`mobile/src/services/online/`) runs the real engine in memory and simulates latency, friends who join and play, turn timers with bot takeover, and dropped connections. From the home screen, **Play online** lets you host a table (2 to 4 seats, either mode, 15 s to 2 min per turn) or join with a code. Try these codes:
+
+| Code | What happens |
+| ---- | ------------ |
+| `DEMO` | Joins a table hosted by a pretend friend, who starts the game a few seconds later |
+| `FULL` | "That table is full" |
+| `DONE` | "That game has already started" |
+
+Inside a game, **Demo controls** drops your connection or freezes a friend so you can see the reconnect and bot-takeover flows. The real backend (Cloud Functions plus Firestore) is planned in [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md); it only has to implement the `OnlineService` interface in `mobile/src/services/online/types.ts`.
+
 ## To do
 
-- [ ] Online multiplayer. The engine's action-based, serializable state is designed for it; hands would need to move out of the shared game document.
-- [ ] Alternate mode where each player works through the openings at their own pace.
-- [ ] App icon and splash art.
+- [ ] Real online multiplayer backend: Cloud Functions and Firestore behind `OnlineService`, replacing the mock (needs the Blaze plan; see docs/MULTIPLAYER.md).
+- [ ] Real Google sign-in linking and push notifications for turns (both are demo stand-ins today).
+- [ ] Final art pass on the app icon and splash (first version is in `mobile/assets/`).
+- [ ] Custom game variants, later. For example a configurable penalty-card count. That would mean a serializable `rules` object on `GameState`, set in `createGame`.

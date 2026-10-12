@@ -7,7 +7,16 @@ import { handPoints } from './scoring';
 export const CARDS_PER_PLAYER = 13;
 export const MIN_PLAYERS = 2;
 export const MAX_PLAYERS = 6;
+/** The own-pace mode stops after this many hands even if nobody has finished all eight openings. */
+export const MAX_PACED_HANDS = 20;
 const MAX_LOG_ENTRIES = 40;
+
+/**
+ * - `classic`: everyone plays the same opening each hand, eight hands in a row.
+ * - `paced`: each player works through the openings at their own pace. You move on to the next
+ *   opening after a hand in which you opened, and the first to finish All Down wins.
+ */
+export type GameMode = 'classic' | 'paced';
 
 /**
  * Table stakes, in cents. Everyone antes into the pot each hand and buying a card adds to it;
@@ -27,6 +36,8 @@ export interface GamePlayer {
   isBot: boolean;
   hand: Card[];
   isOpen: boolean;
+  /** The opening this player is working on, as an index into `PHASES`. In classic mode it's the hand's opening for everyone. */
+  phaseIndex: number;
 }
 
 export interface TableMeld {
@@ -37,12 +48,17 @@ export interface TableMeld {
 }
 
 export interface RoundResult {
+  /** Which hand this was (0-based). In classic mode this is also the opening everyone played. */
   phaseIndex: number;
   /** Who went out. Null only in games saved before every hand had to end that way. */
   winnerId: string | null;
   points: Record<string, number>;
   /** Cents the winner took from the pot. */
   pot: number;
+  /** Each player's opening this hand, by index into `PHASES`. */
+  phases: Record<string, number>;
+  /** Players who opened this hand, which is what moves them on in paced mode. */
+  opened: string[];
 }
 
 export interface GameLogEntry {
@@ -74,7 +90,9 @@ export interface GameState {
   id: string;
   /** Incremented by every action, so a client can tell whether its view is stale. */
   version: number;
+  mode: GameMode;
   players: GamePlayer[];
+  /** Which hand is being played (0-based). In classic mode this is also the opening. */
   phaseIndex: number;
   dealerIndex: number;
   currentPlayerIndex: number;
@@ -131,8 +149,14 @@ function fail(message: string): never {
 // Queries
 // ---------------------------------------------------------------------------
 
+/** The opening a player has to make this hand. */
+export function phaseOf(player: GamePlayer): PhaseDefinition {
+  return PHASES[player.phaseIndex];
+}
+
+/** The opening the player whose turn it is has to make. */
 export function currentPhase(state: GameState): PhaseDefinition {
-  return PHASES[state.phaseIndex];
+  return phaseOf(currentPlayer(state));
 }
 
 export function currentPlayer(state: GameState): GamePlayer {
@@ -147,7 +171,14 @@ export function getPlayer(state: GameState, playerId: string): GamePlayer {
   return state.players.find((p) => p.id === playerId) ?? fail('Unknown player.');
 }
 
-export function totalScores(state: GameState): Record<string, number> {
+/** The parts of a game that scoring needs, so it works on both full states and player views. */
+export interface Scoreboard<P extends { id: string } = { id: string }> {
+  mode: GameMode;
+  players: P[];
+  results: RoundResult[];
+}
+
+export function totalScores(state: Scoreboard): Record<string, number> {
   const totals: Record<string, number> = Object.fromEntries(state.players.map((p) => [p.id, 0]));
   for (const result of state.results) {
     for (const [playerId, points] of Object.entries(result.points)) {
@@ -175,11 +206,20 @@ export function formatCents(cents: number): string {
   return abs < 100 ? `${sign}${abs}¢` : `${sign}$${(abs / 100).toFixed(2)}`;
 }
 
-/** Players with the fewest points. More than one means a tie. */
-export function leaders(state: GameState): GamePlayer[] {
+/** How many hands the player opened in. In paced mode that's how many openings they've finished. */
+export function openingsCompleted(state: Scoreboard, playerId: string): number {
+  return state.results.filter((r) => r.opened?.includes(playerId)).length;
+}
+
+/**
+ * The winners. In classic mode that's the fewest points. In paced mode it's whoever finished the
+ * most openings, with the fewest points breaking ties. More than one player means a tie.
+ */
+export function leaders<P extends { id: string }>(state: Scoreboard<P>): P[] {
   const totals = totalScores(state);
-  const best = Math.min(...state.players.map((p) => totals[p.id]));
-  return state.players.filter((p) => totals[p.id] === best);
+  const progress = (p: P) => (state.mode === 'paced' ? openingsCompleted(state, p.id) : 0);
+  const best = [...state.players].sort((a, b) => progress(b) - progress(a) || totals[a.id] - totals[b.id])[0];
+  return state.players.filter((p) => progress(p) === progress(best) && totals[p.id] === totals[best.id]);
 }
 
 /** The card on offer in the open buy window, if there is one. */
@@ -205,7 +245,7 @@ export function canBuy(state: GameState, playerId: string): boolean {
 }
 
 /** Why a card can't be discarded right now, ignoring the "nothing else is discardable" fallback. */
-function discardBlockReason(state: GameState, card: Card): string | null {
+function discardBlockReason(state: GameState, player: GamePlayer, card: Card): string | null {
   if (isJoker(card)) return null;
 
   const condition = currentPhase(state).condition;
@@ -225,8 +265,9 @@ function discardBlockReason(state: GameState, card: Card): string | null {
 
 /** Ids of cards in the player's hand that may be discarded right now. */
 export function discardableCardIds(state: GameState, playerId: string): string[] {
-  const hand = getPlayer(state, playerId).hand;
-  const allowed = hand.filter((card) => discardBlockReason(state, card) === null);
+  const player = getPlayer(state, playerId);
+  const hand = player.hand;
+  const allowed = hand.filter((card) => discardBlockReason(state, player, card) === null);
   // If every card is blocked, any card may be discarded.
   return (allowed.length > 0 ? allowed : hand).map((c) => c.id);
 }
@@ -243,9 +284,10 @@ export interface CreateGameOptions {
   players: PlayerSetup[];
   id?: string;
   seed?: number;
+  mode?: GameMode;
 }
 
-export function createGame({ players, id, seed = randomSeed() }: CreateGameOptions): GameState {
+export function createGame({ players, id, seed = randomSeed(), mode = 'classic' }: CreateGameOptions): GameState {
   if (players.length < MIN_PLAYERS || players.length > MAX_PLAYERS) {
     fail(`Quaranta needs ${MIN_PLAYERS} to ${MAX_PLAYERS} players.`);
   }
@@ -257,12 +299,14 @@ export function createGame({ players, id, seed = randomSeed() }: CreateGameOptio
   const state: GameState = {
     id: id ?? `game-${seed.toString(36)}`,
     version: 0,
+    mode,
     players: players.map((p, i) => ({
       id: ids[i],
       name: p.name,
       isBot: p.isBot,
       hand: [],
       isOpen: false,
+      phaseIndex: 0,
     })),
     phaseIndex: 0,
     dealerIndex: 0,
@@ -297,7 +341,7 @@ function addLog(state: GameState, message: string, playerId: string | null = nul
   };
 }
 
-function dealRound(state: GameState, phaseIndex: number, dealerIndex: number): GameState {
+function dealRound(state: GameState, handIndex: number, dealerIndex: number): GameState {
   const [deck, rngState] = shuffle(createQuarantaDeck(), state.rngState);
   const playerCount = state.players.length;
   const hands: Card[][] = state.players.map(() => []);
@@ -310,8 +354,13 @@ function dealRound(state: GameState, phaseIndex: number, dealerIndex: number): G
 
   const dealt: GameState = {
     ...state,
-    players: state.players.map((p, i) => ({ ...p, hand: hands[i], isOpen: false })),
-    phaseIndex,
+    players: state.players.map((p, i) => ({
+      ...p,
+      hand: hands[i],
+      isOpen: false,
+      phaseIndex: state.mode === 'paced' ? p.phaseIndex : handIndex,
+    })),
+    phaseIndex: handIndex,
     dealerIndex,
     currentPlayerIndex: (dealerIndex + 1) % playerCount,
     turnStage: 'draw',
@@ -327,11 +376,8 @@ function dealRound(state: GameState, phaseIndex: number, dealerIndex: number): G
   };
 
   const anted = dealt.players.reduce((next, p) => payIntoPot(next, p.id, STAKES.ante), dealt);
-  const phase = PHASES[phaseIndex];
-  return addLog(
-    anted,
-    `Hand ${phaseIndex + 1}: ${phase.name}. ${state.players[dealerIndex].name} deals. The pot is ${formatCents(anted.pot)}.`,
-  );
+  const hand = state.mode === 'paced' ? `Hand ${handIndex + 1}` : `Hand ${handIndex + 1}: ${PHASES[handIndex].name}`;
+  return addLog(anted, `${hand}. ${state.players[dealerIndex].name} deals. The pot is ${formatCents(anted.pot)}.`);
 }
 
 // ---------------------------------------------------------------------------
@@ -352,20 +398,25 @@ function takeFromHand(player: GamePlayer, cardIds: string[]): { cards: Card[]; r
 function endRound(ending: GameState, winnerId: string): GameState {
   // A pending buy goes through before scoring: the buyer is left holding the card.
   const state = settleBuy(ending);
-  const condition = currentPhase(state).condition;
-  const points = Object.fromEntries(state.players.map((p) => [p.id, handPoints(p.hand, condition)]));
-  const isLastPhase = state.phaseIndex === PHASES.length - 1;
+  const points = Object.fromEntries(state.players.map((p) => [p.id, handPoints(p.hand, phaseOf(p).condition)]));
+  const phases = Object.fromEntries(state.players.map((p) => [p.id, p.phaseIndex]));
+  const opened = state.players.filter((p) => p.isOpen).map((p) => p.id);
+  const lastPhase = PHASES.length - 1;
+  const isFinished =
+    state.mode === 'paced'
+      ? state.players.some((p) => p.isOpen && p.phaseIndex === lastPhase) || state.phaseIndex + 1 >= MAX_PACED_HANDS
+      : state.phaseIndex === lastPhase;
 
   // Whoever went out takes the pot.
   const pot = state.pot ?? 0;
   let ended: GameState = {
     ...credit(state, winnerId, pot),
     pot: 0,
-    results: [...state.results, { phaseIndex: state.phaseIndex, winnerId, points, pot }],
-    status: isLastPhase ? 'gameOver' : 'roundOver',
+    results: [...state.results, { phaseIndex: state.phaseIndex, winnerId, points, pot, phases, opened }],
+    status: isFinished ? 'gameOver' : 'roundOver',
   };
   ended = addLog(ended, `${getPlayer(state, winnerId).name} went out and takes the ${formatCents(pot)} pot!`, winnerId);
-  return isLastPhase ? payGameWinners(ended) : ended;
+  return isFinished ? payGameWinners(ended) : ended;
 }
 
 /** The game's winner collects from everyone else. Players tied for first split the payments. */
@@ -550,7 +601,7 @@ function discard(state: GameState, player: GamePlayer, cardId: string): GameStat
   const card = cards[0];
 
   if (!canDiscard(state, player.id, cardId)) {
-    fail(discardBlockReason(state, card) ?? "That card can't be discarded right now.");
+    fail(discardBlockReason(state, player, card) ?? "That card can't be discarded right now.");
   }
 
   // Ending the turn closes the buy window before this discard covers the card on offer.
@@ -578,7 +629,13 @@ function discard(state: GameState, player: GamePlayer, cardId: string): GameStat
 function nextRound(state: GameState): GameState {
   if (state.status !== 'roundOver') fail('The current hand is still being played.');
   const dealerIndex = (state.dealerIndex + 1) % state.players.length;
-  return dealRound(state, state.phaseIndex + 1, dealerIndex);
+  // In paced mode, players who opened move on to their next opening; everyone else tries again.
+  const lastPhase = PHASES.length - 1;
+  const advanced: GameState =
+    state.mode === 'paced'
+      ? { ...state, players: state.players.map((p) => ({ ...p, phaseIndex: p.isOpen ? Math.min(p.phaseIndex + 1, lastPhase) : p.phaseIndex })) }
+      : state;
+  return dealRound(advanced, state.phaseIndex + 1, dealerIndex);
 }
 
 /** Applies an action to the game, returning the new state. Throws `GameRuleError` for illegal moves. */

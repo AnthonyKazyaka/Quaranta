@@ -15,8 +15,8 @@ interface BuyOfferProps {
   /** Other players who have asked for it. */
   rivals: string[];
   cardWidth: number;
-  /** How long the table waits for a decision before play carries on. */
-  decisionMs: number;
+  /** How long the table waits for a decision before play carries on. Leave out when it does not wait. */
+  decisionMs?: number;
   onBuy: () => void;
   onPass: () => void;
 }
@@ -27,7 +27,7 @@ export function BuyOffer({ card, sellerName, requested, rivals, cardWidth, decis
   const remaining = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    if (requested || prefersReducedMotion()) return;
+    if (requested || !decisionMs || prefersReducedMotion()) return;
     // Width can't use the native driver, so this runs on the JS thread everywhere.
     const timer = Animated.timing(remaining, { toValue: 0, duration: decisionMs, easing: Easing.linear, useNativeDriver: false });
     timer.start();
@@ -58,7 +58,7 @@ export function BuyOffer({ card, sellerName, requested, rivals, cardWidth, decis
             </Text>
           </>
         )}
-        {!requested && (
+        {!requested && !!decisionMs && (
           <View style={styles.track}>
             <Animated.View
               style={[styles.bar, { width: remaining.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }) }]}

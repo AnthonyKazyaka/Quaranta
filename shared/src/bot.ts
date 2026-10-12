@@ -6,10 +6,10 @@ import {
   buyableCard,
   canBuy,
   canDrawFromDeck,
-  currentPhase,
   currentPlayer,
   discardableCardIds,
   getPlayer,
+  phaseOf,
   topDiscard,
 } from './game';
 import {
@@ -269,7 +269,7 @@ function keepScore(card: Card, hand: Card[], weights: { rank: number; suit: numb
 function chooseDiscard(state: GameState, player: GamePlayer): string {
   const allowed = new Set(discardableCardIds(state, player.id));
   const options = player.hand.filter((c) => allowed.has(c.id));
-  const weights = player.isOpen ? OPEN_WEIGHTS : OPENING_WEIGHTS[currentPhase(state).condition];
+  const weights = player.isOpen ? OPEN_WEIGHTS : OPENING_WEIGHTS[phaseOf(player).condition];
   options.sort((a, b) => keepScore(a, player.hand, weights) - keepScore(b, player.hand, weights));
   return options[0].id;
 }
@@ -292,7 +292,7 @@ function shouldTakeDiscard(state: GameState, player: GamePlayer): boolean {
     return state.melds.some((m) => tryAddToMeld(m, [card])) || formsNewMeld(card, player.hand);
   }
 
-  const condition = currentPhase(state).condition;
+  const condition = phaseOf(player).condition;
   if (isJoker(card) && condition !== 'allDown') return false;
   return findOpeningMelds([...player.hand, card], condition) !== null;
 }
@@ -318,7 +318,7 @@ export function chooseBotBuy(state: GameState, playerId: string): boolean {
   const danger = state.players.some((p) => p.id !== playerId && p.isOpen && p.hand.length <= RISKY_HAND_SIZE);
   if (player.isOpen) return !danger && formsNewMeld(card, player.hand);
 
-  const condition = currentPhase(state).condition;
+  const condition = phaseOf(player).condition;
   if (findOpeningMelds(player.hand, condition) !== null) return false;
   const withCard = [...player.hand, card];
   if (findOpeningMelds(withCard, condition) !== null) return true;
@@ -337,7 +337,7 @@ export function chooseBotAction(state: GameState): GameAction {
   }
 
   if (!player.isOpen) {
-    const opening = findOpeningMelds(player.hand, currentPhase(state).condition);
+    const opening = findOpeningMelds(player.hand, phaseOf(player).condition);
     if (opening) return { type: 'open', playerId, melds: opening };
     return { type: 'discard', playerId, cardId: chooseDiscard(state, player) };
   }
@@ -360,4 +360,16 @@ export function chooseBotAction(state: GameState): GameAction {
   }
 
   return { type: 'discard', playerId, cardId: chooseDiscard(state, player) };
+}
+
+/**
+ * A move that's always legal for the player whose turn it is: draw (from the deck, or the discard
+ * pile if the deck is empty) or throw away a card. For when a bot's usual choice is rejected or a
+ * turn has to be ended on someone's behalf.
+ */
+export function safeBotAction(state: GameState, playerId: string): GameAction {
+  if (state.turnStage === 'draw') {
+    return { type: canDrawFromDeck(state) ? 'drawFromDeck' : 'drawFromDiscard', playerId };
+  }
+  return { type: 'discard', playerId, cardId: discardableCardIds(state, playerId)[0] };
 }

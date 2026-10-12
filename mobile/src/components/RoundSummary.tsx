@@ -1,4 +1,4 @@
-import { GamePlayer, GameState, PHASES, STAKES, formatCents, leaders, totalScores } from '@quaranta/shared';
+import { PHASES, PublicGameView, PublicPlayer, STAKES, formatCents, leaders, openingsCompleted, totalScores } from '@quaranta/shared';
 import { ReactNode } from 'react';
 import { Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { colors, fonts, radius, seatColor, shadows, spacing } from '@/theme';
@@ -6,27 +6,30 @@ import { Button } from './Button';
 import { Appear } from './motion';
 
 interface RoundSummaryProps {
-  game: GameState;
+  view: PublicGameView;
   onNext: () => void;
   onExit: () => void;
+  /** The deal button is disabled while a request to the server is in flight. */
+  busy?: boolean;
 }
 
 interface Standing {
-  player: GamePlayer;
+  player: PublicPlayer;
   seat: number;
 }
 
 /** Shown when a hand ends: who went out, everyone's points per hand, and running totals. */
-export function RoundSummary({ game, onNext, onExit }: RoundSummaryProps) {
-  const visible = game.status !== 'playing';
-  const lastResult = game.results[game.results.length - 1];
-  const totals = totalScores(game);
-  const isGameOver = game.status === 'gameOver';
-  const leaderIds = new Set(leaders(game).map((p) => p.id));
-  const winnerNames = leaders(game).map((p) => p.name);
-  const wentOut = lastResult?.winnerId ? game.players.find((p) => p.id === lastResult.winnerId)?.name : null;
+export function RoundSummary({ view, onNext, onExit, busy }: RoundSummaryProps) {
+  const visible = view.status !== 'playing';
+  const lastResult = view.results[view.results.length - 1];
+  const totals = totalScores(view);
+  const isGameOver = view.status === 'gameOver';
+  const paced = view.mode === 'paced';
+  const leaderIds = new Set(leaders(view).map((p) => p.id));
+  const winnerNames = leaders(view).map((p) => p.name);
+  const wentOut = lastResult?.winnerId ? view.players.find((p) => p.id === lastResult.winnerId)?.name : null;
   // Rank players by running total so the table reads as standings.
-  const standings = game.players
+  const standings = view.players
     .map((player, seat) => ({ player, seat }))
     .sort((a, b) => totals[a.player.id] - totals[b.player.id]);
 
@@ -49,16 +52,20 @@ export function RoundSummary({ game, onNext, onExit }: RoundSummaryProps) {
     <Modal visible={visible} transparent animationType="fade" onRequestClose={isGameOver ? onExit : onNext}>
       <View style={styles.backdrop}>
         {visible && (
-          <Appear key={`${game.phaseIndex}-${game.status}`} from="below" duration={360} delay={120} style={styles.sheet}>
+          <Appear key={`${view.phaseIndex}-${view.status}`} from="below" duration={360} delay={120} style={styles.sheet}>
             <Text style={styles.kicker}>
-              {isGameOver ? 'Game over' : `Hand ${(lastResult?.phaseIndex ?? game.phaseIndex) + 1} of ${PHASES.length}`}
+              {isGameOver
+                ? 'Game over'
+                : paced
+                  ? `Hand ${(lastResult?.phaseIndex ?? view.phaseIndex) + 1}`
+                  : `Hand ${(lastResult?.phaseIndex ?? view.phaseIndex) + 1} of ${PHASES.length}`}
             </Text>
             <Text style={styles.title} accessibilityRole="header">
               {isGameOver ? `${winnerNames.join(' & ')} ${winnerNames.length > 1 ? 'tie' : 'wins'}!` : 'Hand complete'}
             </Text>
             {lastResult && (
               <Text style={styles.subtitle}>
-                {PHASES[lastResult.phaseIndex].name}:{' '}
+                {paced ? `Hand ${lastResult.phaseIndex + 1}` : PHASES[lastResult.phaseIndex].name}:{' '}
                 {wentOut
                   ? `${wentOut} went out and took the ${formatCents(lastResult.pot ?? 0)} pot.`
                   : 'nobody went out.'}
@@ -80,13 +87,13 @@ export function RoundSummary({ game, onNext, onExit }: RoundSummaryProps) {
               )}
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.handsScroll}>
                 {column(
-                  game.results.map((r) => (
+                  view.results.map((r) => (
                     <Text key={r.phaseIndex} style={[styles.cell, styles.head]}>
                       {r.phaseIndex + 1}
                     </Text>
                   )),
                   ({ player }) =>
-                    game.results.map((r) => (
+                    view.results.map((r) => (
                       <Text key={r.phaseIndex} style={[styles.cell, r.winnerId === player.id && styles.wentOut]}>
                         {r.points[player.id]}
                       </Text>
@@ -95,27 +102,48 @@ export function RoundSummary({ game, onNext, onExit }: RoundSummaryProps) {
               </ScrollView>
               {column(
                 <>
+                  {paced && <Text style={[styles.cell, styles.head, styles.total]}>Done</Text>}
                   <Text style={[styles.cell, styles.head, styles.total]}>Total</Text>
                   <Text style={[styles.cell, styles.head, styles.money]}>{isGameOver ? 'Won' : 'Net'}</Text>
                 </>,
                 ({ player }, leading) => (
                   <>
+                    {paced && <Text style={[styles.cell, styles.total]}>{openingsCompleted(view, player.id)}</Text>}
                     <Text style={[styles.cell, styles.total, leading && styles.leaderText]}>{totals[player.id]}</Text>
-                    <Money cents={game.purses?.[player.id] ?? 0} />
+                    <Money cents={view.purses[player.id] ?? 0} />
                   </>
                 ),
               )}
             </View>
 
+            {paced && !isGameOver && (
+              <View style={styles.next}>
+                <Text style={styles.hint}>Up next</Text>
+                {view.players.map((p) => (
+                  <Text key={p.id} style={styles.nextRow}>
+                    {p.name}: {PHASES[Math.min(p.isOpen ? p.phaseIndex + 1 : p.phaseIndex, PHASES.length - 1)].name}
+                    {p.isOpen ? '' : ' (again)'}
+                  </Text>
+                ))}
+              </View>
+            )}
             <Text style={styles.hint}>
               {isGameOver
-                ? `Lowest total after eight hands wins, and the winner collects ${formatCents(STAKES.gameWin)} from everyone.`
-                : `Up next: ${PHASES[game.phaseIndex + 1].description} Everyone antes ${formatCents(STAKES.ante)}.`}
+                ? `${
+                    paced ? 'Most openings completed wins, with points breaking ties' : 'Lowest total after eight hands wins'
+                  }, and the winner collects ${formatCents(STAKES.gameWin)} from everyone.`
+                : paced
+                  ? `Open to move on to your next opening. Everyone antes ${formatCents(STAKES.ante)}.`
+                  : `Up next: ${PHASES[view.phaseIndex + 1].description} Everyone antes ${formatCents(STAKES.ante)}.`}
             </Text>
             {isGameOver ? (
               <Button label="Back to menu" onPress={onExit} />
             ) : (
-              <Button label={`Deal hand ${game.phaseIndex + 2}: ${PHASES[game.phaseIndex + 1].name}`} onPress={onNext} />
+              <Button
+                label={paced ? `Deal hand ${view.phaseIndex + 2}` : `Deal hand ${view.phaseIndex + 2}: ${PHASES[view.phaseIndex + 1].name}`}
+                disabled={busy}
+                onPress={onNext}
+              />
             )}
           </Appear>
         )}
@@ -134,6 +162,8 @@ function Money({ cents }: { cents: number }) {
 }
 
 const styles = StyleSheet.create({
+  next: { gap: 2 },
+  nextRow: { color: colors.text, fontSize: 13 },
   backdrop: {
     flex: 1,
     backgroundColor: colors.backdrop,

@@ -1,6 +1,6 @@
-import { STAKES, buyableCard, canBuy, cardLabel, currentPlayer, discardableCardIds } from '@quaranta/shared';
+import { STAKES, buyableCard, canBuy, cardLabel, currentPlayer, discardableCardIds, getPlayerView, viewBuyOfferKey } from '@quaranta/shared';
 import { saveGame } from '@/services/gameRepository';
-import { buyOfferKey, useGameStore } from '@/stores/gameStore';
+import { useGameStore } from '@/stores/gameStore';
 
 jest.mock('@/services/gameRepository', () => ({
   saveGame: jest.fn(() => Promise.resolve(false)),
@@ -116,10 +116,15 @@ describe('gameStore', () => {
     if (owner.id === 'human') expect(game.purses.human).toBe(purseBefore - STAKES.buy);
   });
 
+  it('starts games in the chosen mode', () => {
+    store().startGame('Ada', 2, 'paced');
+    expect(store().game!.mode).toBe('paced');
+  });
+
   it('remembers a declined offer', () => {
     store().startGame('Ada', 3);
     playUntilOffered();
     store().passBuy();
-    expect(store().buyPassedKey).toBe(buyOfferKey(store().game!));
+    expect(store().buyPassedKey).toBe(viewBuyOfferKey(getPlayerView(store().game!, 'human')));
   });
 });

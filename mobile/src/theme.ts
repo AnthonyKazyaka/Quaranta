@@ -20,6 +20,9 @@ export const colors = {
   textMuted: '#a9c2b2',
   textFaint: '#76937f',
   danger: '#ff8a7a',
+  /** Solid dark red for banners. */
+  dangerSurface: '#5a1f1f',
+  success: '#7be39a',
   dangerSoft: 'rgba(255, 138, 122, 0.14)',
   cardFace: '#fffaf0',
   cardFaceShade: '#f3ead6',

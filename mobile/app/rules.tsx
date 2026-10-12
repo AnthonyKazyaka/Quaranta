@@ -4,6 +4,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button } from '@/components/Button';
 import { Appear } from '@/components/motion';
 import { Screen } from '@/components/Screen';
+import { onlineEnabled } from '@/features';
 import { colors, fonts, radius, spacing } from '@/theme';
 
 const TURN_RULES = [
@@ -20,6 +21,15 @@ const BUYING = [
   'The offer stays open until that player discards. If several people want the card, it goes to the first of them in turn order after that player.',
   `A buyer takes just the one card and puts ${formatCents(STAKES.buy)} in the pot. There's no limit, but every card you buy is one more you could be caught holding when someone goes out.`,
 ];
+
+const OWN_PACE_RULES = [
+  'Each player works on their own opening. Everyone starts with High Pair.',
+  "After a hand in which you opened, you move on to the next opening. If you didn't open, you try the same one again.",
+  'The game ends after the hand in which someone opens with All Down, or after 20 hands. The player who completed the most openings wins, and points break ties.',
+];
+
+const ONLINE_RULES =
+  "Host a table or join with a four-letter invite code. Every turn has a time limit; if you run out, a computer player plays your turn, and after two missed turns it takes your seat until you tap I'm back. Empty seats can be filled with computer players.";
 
 const STAKES_RULES = [
   `Everyone antes ${formatCents(STAKES.ante)} into the pot at the start of each hand.`,
@@ -88,6 +98,14 @@ export default function RulesScreen() {
           ))}
         </Section>
 
+        <Section title="Own pace mode">
+          {OWN_PACE_RULES.map((rule) => (
+            <Text key={rule} style={styles.bullet}>
+              • {rule}
+            </Text>
+          ))}
+        </Section>
+
         <Section title="Scoring">
           <Text style={styles.body}>When someone goes out, everyone else scores the cards left in their hand:</Text>
           {SCORING.map((rule) => (
@@ -95,7 +113,7 @@ export default function RulesScreen() {
               • {rule}
             </Text>
           ))}
-          <Text style={styles.body}>After eight hands, the lowest total wins.</Text>
+          <Text style={styles.body}>After eight hands, the lowest total wins (in Own pace mode, see above).</Text>
         </Section>
 
         <Section title="Stakes">
@@ -105,6 +123,12 @@ export default function RulesScreen() {
             </Text>
           ))}
         </Section>
+
+        {onlineEnabled && (
+          <Section title="Playing online">
+            <Text style={styles.body}>{ONLINE_RULES}</Text>
+          </Section>
+        )}
 
         <Button label="Back to the table" onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
       </ScrollView>

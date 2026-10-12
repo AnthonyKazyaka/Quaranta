@@ -23,6 +23,13 @@ function withHands(state: GameState, hands: string[], overrides: Partial<GameSta
 
 const ids = (cards: Card[]) => cards.map((c) => c.id);
 
+/** Moves a classic game on to the given hand, which is also everyone's opening. */
+const atHand = (state: GameState, handIndex: number): GameState => ({
+  ...state,
+  phaseIndex: handIndex,
+  players: state.players.map((p) => ({ ...p, phaseIndex: handIndex })),
+});
+
 describe('createGame', () => {
   it('deals 13 cards each and turns up one discard', () => {
     const state = createGame({ seed: 1, players: ['A', 'B', 'C', 'D'].map((name) => ({ name, isBot: true })) });
@@ -140,11 +147,10 @@ describe('opening and table play', () => {
 
   it("doesn't allow discarding a card that plays on the table", () => {
     let state = playStage(['8H 2C', '2H']);
-    state = {
-      ...state,
-      phaseIndex: 2,
-      melds: [{ id: 'm1', ownerId: 'p2', kind: 'run', cards: parseCards('5H 6H 7H') }],
-    };
+    state = atHand(
+      { ...state, melds: [{ id: 'm1', ownerId: 'p2', kind: 'run', cards: parseCards('5H 6H 7H') }] },
+      2,
+    );
     const [eight, two] = state.players[0].hand;
     expect(canDiscard(state, 'p1', eight.id)).toBe(false);
     expect(canDiscard(state, 'p1', two.id)).toBe(true);
@@ -154,12 +160,14 @@ describe('opening and table play', () => {
     const tableRun = parseCards('5H J* 7H');
     tableRun[1] = { ...tableRun[1], joker: true, represents: { suit: 'hearts', rank: 6 } } as Card;
     let state = playStage(['8H 6H', '2H']);
-    state = {
-      ...state,
-      phaseIndex: 2,
-      players: state.players.map((p, i) => (i === 0 ? { ...p, isOpen: true } : p)),
-      melds: [{ id: 'm1', ownerId: 'p2', kind: 'run', cards: tableRun }],
-    };
+    state = atHand(
+      {
+        ...state,
+        players: state.players.map((p, i) => (i === 0 ? { ...p, isOpen: true } : p)),
+        melds: [{ id: 'm1', ownerId: 'p2', kind: 'run', cards: tableRun }],
+      },
+      2,
+    );
     const [eight, six] = state.players[0].hand;
 
     state = applyAction(state, { type: 'swapJoker', playerId: 'p1', meldId: 'm1', cardId: six.id });
@@ -170,7 +178,14 @@ describe('opening and table play', () => {
     state = applyAction(state, { type: 'addToMeld', playerId: 'p1', meldId: 'm1', cardIds: [joker.id] });
 
     expect(state.status).toBe('roundOver');
-    expect(state.results[0]).toEqual({ phaseIndex: 2, winnerId: 'p1', points: { p1: 0, p2: 2 }, pot: 50 });
+    expect(state.results[0]).toEqual({
+      phaseIndex: 2,
+      winnerId: 'p1',
+      points: { p1: 0, p2: 2 },
+      pot: 50,
+      phases: { p1: 2, p2: 2 },
+      opened: ['p1'],
+    });
   });
 
   it('rotates the dealer and advances the phase for the next hand', () => {

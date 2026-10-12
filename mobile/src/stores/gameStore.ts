@@ -1,72 +1,45 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   GameAction,
+  GameMode,
   GameRuleError,
   GameState,
+  PlayerView,
   applyAction,
   canBuy,
-  canDrawFromDeck,
   chooseBotAction,
   chooseBotBuy,
   createGame,
   currentPlayer,
-  discardableCardIds,
-  findSwappableJoker,
+  getPlayerView,
+  safeBotAction,
 } from '@quaranta/shared';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
+import { BOT_NAMES } from '@/botNames';
 import { saveGame } from '@/services/gameRepository';
+import { TableUi, createTableSlice, reconcileSelection } from './tableSlice';
 
-export const BOT_NAMES = ['Bianca', 'Marco', 'Giulia', 'Luca', 'Sofia'];
+export type { SortOrder, StoreMessage } from './tableSlice';
+
 /** Safety valve: a bot that somehow keeps acting is made to discard. */
 const MAX_BOT_ACTIONS_PER_TURN = 40;
 
-export type SortOrder = 'suit' | 'rank';
-
-export interface StoreMessage {
-  text: string;
-  tone: 'info' | 'error';
-}
-
-interface GameStore {
+interface GameStore extends TableUi {
   game: GameState | null;
   humanId: string | null;
   createdAt: number | null;
-  sortBy: SortOrder;
   playerName: string;
-  /** Cards the human has selected in their hand. */
-  selectedIds: string[];
-  /** Groups set aside for opening, which must all be played together. */
-  stagedMelds: string[][];
-  message: StoreMessage | null;
   botActionsThisTurn: number;
-  /** The buy offer the human declined (see buyOfferKey), so the table stops waiting on them. */
-  buyPassedKey: string | null;
 
-  startGame: (playerName: string, botCount: number) => void;
+  startGame: (playerName: string, botCount: number, mode?: GameMode) => void;
   quitGame: () => void;
-  setSortBy: (sortBy: SortOrder) => void;
-  toggleCard: (cardId: string) => void;
-  clearSelection: () => void;
-  stageSelection: () => void;
-  unstageMeld: (index: number) => void;
-
-  drawFromDeck: () => void;
-  drawFromDiscard: () => void;
-  openWithStaged: () => void;
-  laySelection: () => void;
-  discardSelection: () => void;
-  playSelectionOnMeld: (meldId: string) => void;
-  buyDiscard: () => void;
-  passBuy: () => void;
-  nextRound: () => void;
   runBotStep: () => void;
 }
 
-/** Identifies one buy offer: a card can come up for sale again later in the hand. */
-export function buyOfferKey(game: GameState): string | null {
-  const window = game.buyWindow;
-  return window ? `${game.phaseIndex}:${game.reshuffles}:${game.currentPlayerIndex}:${window.cardId}` : null;
+/** The game as the human player sees it, which is what the table screen draws. */
+export function localView(game: GameState | null, humanId: string | null): PlayerView | null {
+  return game && humanId ? getPlayerView(game, humanId) : null;
 }
 
 /** When a buy window opens, every bot that isn't playing decides whether to ask for the card. */
@@ -98,7 +71,7 @@ export const useGameStore = create<GameStore>()(
     (set, get) => {
       /** Applies an action, keeping UI state in sync. Returns false if the move was illegal. */
       const dispatch = (action: GameAction): boolean => {
-        const { game, createdAt } = get();
+        const { game, createdAt, humanId } = get();
         if (!game) return false;
 
         let next: GameState;
@@ -113,42 +86,43 @@ export const useGameStore = create<GameStore>()(
         }
 
         const turnPassed = next.currentPlayerIndex !== game.currentPlayerIndex || next.status !== game.status;
-        const humanHand = new Set(next.players.find((p) => p.id === get().humanId)?.hand.map((c) => c.id));
+        const previousView = localView(game, humanId);
+        const nextView = localView(next, humanId);
         set({
           game: next,
-          selectedIds: turnPassed ? [] : get().selectedIds.filter((id) => humanHand.has(id)),
-          stagedMelds: turnPassed || action.type === 'open' ? [] : get().stagedMelds,
+          ...(nextView ? reconcileSelection(get(), previousView, nextView) : {}),
           message: null,
           botActionsThisTurn: turnPassed ? 0 : get().botActionsThisTurn,
         });
 
-        if (shouldSaveToCloud(game, next, get().humanId)) {
+        if (shouldSaveToCloud(game, next, humanId)) {
           void saveGame(next, createdAt ?? Date.now());
         }
         return true;
       };
 
-      const humanAction = <T extends GameAction>(build: (playerId: string) => T) => {
-        const { humanId } = get();
-        if (humanId) dispatch(build(humanId));
-      };
+      const table = createTableSlice(
+        (partial) => set(partial),
+        () => get(),
+        {
+          getView: () => localView(get().game, get().humanId),
+          send: dispatch,
+        },
+      );
 
       return {
+        ...table,
         game: null,
         humanId: null,
         createdAt: null,
-        sortBy: 'suit',
         playerName: '',
-        selectedIds: [],
-        stagedMelds: [],
-        message: null,
         botActionsThisTurn: 0,
-        buyPassedKey: null,
 
-        startGame: (playerName, botCount) => {
+        startGame: (playerName, botCount, mode = 'classic') => {
           const name = playerName.trim() || 'You';
           const game = createGame({
             id: `game-${Date.now().toString(36)}`,
+            mode,
             players: [
               { id: 'human', name, isBot: false },
               ...BOT_NAMES.slice(0, botCount).map((botName, i) => ({ id: `bot${i + 1}`, name: botName, isBot: true })),
@@ -163,90 +137,14 @@ export const useGameStore = create<GameStore>()(
             selectedIds: [],
             stagedMelds: [],
             message: null,
+            buyPassedKey: null,
             botActionsThisTurn: 0,
           });
           void saveGame(game, createdAt);
         },
 
-        quitGame: () => set({ game: null, humanId: null, createdAt: null, selectedIds: [], stagedMelds: [], message: null }),
-
-        setSortBy: (sortBy) => set({ sortBy }),
-
-        toggleCard: (cardId) => {
-          const { selectedIds } = get();
-          set({
-            selectedIds: selectedIds.includes(cardId) ? selectedIds.filter((id) => id !== cardId) : [...selectedIds, cardId],
-            message: null,
-          });
-        },
-
-        clearSelection: () => set({ selectedIds: [] }),
-
-        stageSelection: () => {
-          const { selectedIds, stagedMelds } = get();
-          if (selectedIds.length === 0) return;
-          set({ stagedMelds: [...stagedMelds, selectedIds], selectedIds: [], message: null });
-        },
-
-        unstageMeld: (index) => set({ stagedMelds: get().stagedMelds.filter((_, i) => i !== index) }),
-
-        drawFromDeck: () => humanAction((playerId) => ({ type: 'drawFromDeck', playerId })),
-        drawFromDiscard: () => humanAction((playerId) => ({ type: 'drawFromDiscard', playerId })),
-
-        openWithStaged: () => {
-          const { stagedMelds, selectedIds } = get();
-          // Anything still selected counts as one more group, so a single meld needn't be staged first.
-          const melds = selectedIds.length > 0 ? [...stagedMelds, selectedIds] : stagedMelds;
-          if (melds.length === 0) {
-            set({ message: { text: 'Select the cards you want to open with.', tone: 'info' } });
-            return;
-          }
-          humanAction((playerId) => ({ type: 'open', playerId, melds }));
-        },
-
-        laySelection: () => humanAction((playerId) => ({ type: 'layMeld', playerId, cardIds: get().selectedIds })),
-
-        discardSelection: () => {
-          const { selectedIds } = get();
-          if (selectedIds.length !== 1) {
-            set({ message: { text: 'Select exactly one card to discard.', tone: 'info' } });
-            return;
-          }
-          humanAction((playerId) => ({ type: 'discard', playerId, cardId: selectedIds[0] }));
-        },
-
-        playSelectionOnMeld: (meldId) => {
-          const { game, humanId, selectedIds } = get();
-          if (!game || !humanId) return;
-          if (selectedIds.length === 0) {
-            set({ message: { text: 'Select cards from your hand, then tap a meld to play them.', tone: 'info' } });
-            return;
-          }
-
-          const meld = game.melds.find((m) => m.id === meldId);
-          const hand = game.players.find((p) => p.id === humanId)?.hand ?? [];
-          const card = selectedIds.length === 1 ? hand.find((c) => c.id === selectedIds[0]) : undefined;
-          const joker = meld && card ? findSwappableJoker(meld, card) : null;
-          const exactSwap =
-            joker?.represents && card && !card.joker && joker.represents.rank === card.rank && joker.represents.suit === card.suit;
-
-          if (exactSwap && card) {
-            dispatch({ type: 'swapJoker', playerId: humanId, meldId, cardId: card.id });
-            return;
-          }
-          if (dispatch({ type: 'addToMeld', playerId: humanId, meldId, cardIds: selectedIds })) return;
-          if (joker && card) {
-            dispatch({ type: 'swapJoker', playerId: humanId, meldId, cardId: card.id });
-          }
-        },
-
-        buyDiscard: () => humanAction((playerId) => ({ type: 'buy', playerId })),
-        passBuy: () => {
-          const { game } = get();
-          set({ buyPassedKey: game ? buyOfferKey(game) : null });
-        },
-
-        nextRound: () => dispatch({ type: 'nextRound' }),
+        quitGame: () =>
+          set({ game: null, humanId: null, createdAt: null, selectedIds: [], stagedMelds: [], message: null, buyPassedKey: null }),
 
         runBotStep: () => {
           const { game, botActionsThisTurn } = get();
@@ -254,43 +152,22 @@ export const useGameStore = create<GameStore>()(
           const bot = currentPlayer(game);
           if (!bot.isBot) return;
 
-          let action = chooseBotAction(game);
-          if (botActionsThisTurn >= MAX_BOT_ACTIONS_PER_TURN && game.turnStage === 'play') {
-            action = { type: 'discard', playerId: bot.id, cardId: discardableCardIds(game, bot.id)[0] };
-          }
+          // A bot that keeps acting without ending its turn is made to discard.
+          const stuck = botActionsThisTurn >= MAX_BOT_ACTIONS_PER_TURN && game.turnStage === 'play';
+          const action = stuck ? safeBotAction(game, bot.id) : chooseBotAction(game);
           set({ botActionsThisTurn: botActionsThisTurn + 1 });
-          if (!dispatch(action)) {
-            // The bot chose an illegal move; fall back to something always legal.
-            dispatch(
-              game.turnStage === 'draw'
-                ? { type: canDrawFromDeck(game) ? 'drawFromDeck' : 'drawFromDiscard', playerId: bot.id }
-                : { type: 'discard', playerId: bot.id, cardId: discardableCardIds(game, bot.id)[0] },
-            );
-          }
+          // If the bot chose an illegal move, fall back to something always legal.
+          if (!dispatch(action)) dispatch(safeBotAction(game, bot.id));
         },
       };
     },
     {
       name: 'quaranta-game',
       storage: createJSONStorage(() => AsyncStorage),
-      version: 2,
-      // v0 games predate GameState.version and GameState.reshuffles; v1 games predate buying and stakes.
+      version: 3,
       migrate: (persisted, fromVersion) => {
         const state = persisted as { game: GameState | null };
-        if (fromVersion < 1 && state.game) {
-          state.game = { ...state.game, version: state.game.version ?? 0, reshuffles: state.game.reshuffles ?? 0 };
-        }
-        if (fromVersion < 2 && state.game) {
-          const game = state.game;
-          state.game = {
-            ...game,
-            buyWindow: game.buyWindow ?? null,
-            firstDiscardId: game.firstDiscardId ?? null,
-            pot: game.pot ?? 0,
-            purses: game.purses ?? Object.fromEntries(game.players.map((p) => [p.id, 0])),
-            results: game.results.map((r) => ({ ...r, pot: r.pot ?? 0 })),
-          };
-        }
+        if (state.game) state.game = migrateGame(state.game, fromVersion);
         return state as GameStore;
       },
       partialize: (state) => ({
@@ -303,3 +180,37 @@ export const useGameStore = create<GameStore>()(
     },
   ),
 );
+
+/** Brings a game saved by an older version of the app up to the current state shape. */
+export function migrateGame(saved: GameState, fromVersion: number): GameState {
+  let game = saved;
+  // v0 games predate GameState.version and GameState.reshuffles.
+  if (fromVersion < 1) {
+    game = { ...game, version: game.version ?? 0, reshuffles: game.reshuffles ?? 0 };
+  }
+  // v1 games predate buying and stakes.
+  if (fromVersion < 2) {
+    game = {
+      ...game,
+      buyWindow: game.buyWindow ?? null,
+      firstDiscardId: game.firstDiscardId ?? null,
+      pot: game.pot ?? 0,
+      purses: game.purses ?? Object.fromEntries(game.players.map((p) => [p.id, 0])),
+      results: game.results.map((r) => ({ ...r, pot: r.pot ?? 0 })),
+    };
+  }
+  // v2 games predate the own-pace mode and per-player openings.
+  if (fromVersion < 3) {
+    game = {
+      ...game,
+      mode: game.mode ?? 'classic',
+      players: game.players.map((p) => ({ ...p, phaseIndex: p.phaseIndex ?? game.phaseIndex })),
+      results: game.results.map((r) => ({
+        ...r,
+        phases: r.phases ?? Object.fromEntries(game.players.map((p) => [p.id, r.phaseIndex])),
+        opened: r.opened ?? [],
+      })),
+    };
+  }
+  return game;
+}

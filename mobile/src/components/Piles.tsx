@@ -1,4 +1,4 @@
-import { GameState, canDrawFromDeck, formatCents, topDiscard } from '@quaranta/shared';
+import { PublicGameView, formatCents, viewCanDrawFromDeck } from '@quaranta/shared';
 import { ReactNode } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, radius, shadows, spacing } from '@/theme';
@@ -6,7 +6,7 @@ import { Appear, PressState, usePulse } from './motion';
 import { CardBack, PlayingCard, cardHeight } from './PlayingCard';
 
 interface PilesProps {
-  game: GameState;
+  view: PublicGameView;
   cardWidth: number;
   canDraw: boolean;
   /** The top discard is up for sale. */
@@ -16,23 +16,23 @@ interface PilesProps {
 }
 
 /** The deck and discard pile. Both glow when it's your turn to draw. */
-export function Piles({ game, cardWidth, canDraw, forSale, onDrawDeck, onDrawDiscard }: PilesProps) {
+export function Piles({ view, cardWidth, canDraw, forSale, onDrawDeck, onDrawDiscard }: PilesProps) {
   const pulse = usePulse(canDraw);
-  const discard = topDiscard(game);
-  const under = game.discardPile.length > 1 ? game.discardPile[game.discardPile.length - 2] : null;
+  const discard = view.topDiscard;
+  const under = view.underDiscard;
   const height = cardHeight(cardWidth);
   // A thicker stack for a fuller deck.
-  const layers = Math.min(3, Math.ceil(game.deck.length / 18));
+  const layers = Math.min(3, Math.ceil(view.deckCount / 18));
 
   return (
     <View style={styles.piles}>
       <Pile
         label="Deck"
-        badge={String(game.deck.length)}
-        active={canDraw && canDrawFromDeck(game)}
+        badge={String(view.deckCount)}
+        active={canDraw && viewCanDrawFromDeck(view)}
         pulse={pulse}
         onPress={onDrawDeck}
-        accessibilityLabel={`Draw from the deck, ${game.deck.length} cards left`}
+        accessibilityLabel={`Draw from the deck, ${view.deckCount} cards left`}
       >
         <View style={{ width: cardWidth + 4, height: height + 4 }}>
           {Array.from({ length: layers }, (_, i) => layers - i).map((offset) => (
@@ -68,13 +68,13 @@ export function Piles({ game, cardWidth, canDraw, forSale, onDrawDeck, onDrawDis
         </View>
       </Pile>
 
-      <View style={styles.pot} accessible accessibilityLabel={`Pot: ${formatCents(game.pot ?? 0)}`}>
-        <Appear key={game.pot ?? 0} from="scale" duration={220}>
+      <View style={styles.pot} accessible accessibilityLabel={`Pot: ${formatCents(view.pot)}`}>
+        <Appear key={view.pot} from="scale" duration={220}>
           <View style={styles.coin}>
             <Text style={styles.coinText}>¢</Text>
           </View>
         </Appear>
-        <Text style={styles.potAmount}>{formatCents(game.pot ?? 0)}</Text>
+        <Text style={styles.potAmount}>{formatCents(view.pot)}</Text>
         <Text style={styles.label}>Pot</Text>
       </View>
     </View>
