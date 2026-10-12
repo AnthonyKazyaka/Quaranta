@@ -13,8 +13,6 @@ export const MAX_TABLE_SEATS = 4;
 export const TURN_SECONDS_OPTIONS = [15, 30, 60, 120] as const;
 /** After this many timed-out turns in a row, a bot takes over the seat until the player returns. */
 export const TIMEOUTS_BEFORE_TAKEOVER = 2;
-/** Buying is quick, so its window is capped no matter how long turns are. */
-export const BUY_WINDOW_SECONDS = 15;
 
 export interface TableSettings {
   seatCount: number;

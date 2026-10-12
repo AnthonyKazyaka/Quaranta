@@ -54,7 +54,6 @@ export function errorText(error: unknown): string {
 /** Whether the game is waiting on this player right now. */
 export function isWaitingOnMe(view: PlayerView | null): boolean {
   if (!view || view.status !== 'playing') return false;
-  if (view.buyOffer) return view.buyOffer.eligible.includes(view.viewerId) && !view.buyOffer.responses[view.viewerId];
   return view.players[view.currentPlayerIndex].id === view.viewerId;
 }
 

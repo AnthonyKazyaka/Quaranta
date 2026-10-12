@@ -1,9 +1,11 @@
-import { MAX_POINTS_PER_HAND, PHASES } from '@quaranta/shared';
+import { MAX_POINTS_PER_HAND, PHASES, STAKES, formatCents } from '@quaranta/shared';
 import { useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
-import { colors, radius, spacing } from '@/theme';
+import { Appear } from '@/components/motion';
+import { Screen } from '@/components/Screen';
+import { onlineEnabled } from '@/features';
+import { colors, fonts, radius, spacing } from '@/theme';
 
 const TURN_RULES = [
   'Draw the top card of the deck or the top card of the discard pile.',
@@ -13,17 +15,26 @@ const TURN_RULES = [
   'The first player to get rid of every card goes out and ends the hand.',
 ];
 
-const BUYING_RULES = [
-  "When the player to the discarder's left draws from the deck instead of taking the top discard, everyone else gets a chance to buy that discard first. The card they passed up is up for sale.",
-  "A buyer takes just that card into their hand, and then everyone carries on. It doesn't change whose turn it is.",
-  "If several people want it, the player closest to the current player's left in turn order gets it. The player who threw the card can't buy it back.",
-  "The first card turned up at the start of a hand and jokers can't be bought. There's no limit on how often you can buy.",
+const BUYING = [
+  "When the player whose turn it is draws from the deck instead of taking the top discard, anyone else may buy that discard. It's open to everyone, whether or not they've opened.",
+  "Every card is for sale except jokers and the card turned up when the hand is dealt.",
+  'The offer stays open until that player discards. If several people want the card, it goes to the first of them in turn order after that player.',
+  `A buyer takes just the one card and puts ${formatCents(STAKES.buy)} in the pot. There's no limit, but every card you buy is one more you could be caught holding when someone goes out.`,
 ];
 
 const OWN_PACE_RULES = [
   'Each player works on their own opening. Everyone starts with High Pair.',
   "After a hand in which you opened, you move on to the next opening. If you didn't open, you try the same one again.",
   'The game ends after the hand in which someone opens with All Down, or after 20 hands. The player who completed the most openings wins, and points break ties.',
+];
+
+const ONLINE_RULES =
+  "Host a table or join with a four-letter invite code. Every turn has a time limit; if you run out, a computer player plays your turn, and after two missed turns it takes your seat until you tap I'm back. Empty seats can be filled with computer players.";
+
+const STAKES_RULES = [
+  `Everyone antes ${formatCents(STAKES.ante)} into the pot at the start of each hand.`,
+  'Whoever goes out takes the pot. A hand only ends when someone goes out: if the deck runs dry, the discards are shuffled into a new one.',
+  `The winner of the game collects ${formatCents(STAKES.gameWin)} from every other player. Players tied for first split it.`,
 ];
 
 const SCORING = [
@@ -37,11 +48,14 @@ const SCORING = [
 export default function RulesScreen() {
   const router = useRouter();
   return (
-    <SafeAreaView style={styles.safe}>
+    <Screen>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title} accessibilityRole="header">
-          How to play
-        </Text>
+        <View style={styles.titleRow}>
+          <Text style={styles.title} accessibilityRole="header">
+            How to play
+          </Text>
+          <Button label="Back" variant="secondary" compact onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
+        </View>
         <Text style={styles.body}>
           Quaranta is played with two decks plus four jokers (108 cards). Everyone is dealt 13 cards. A game is eight
           hands, each with its own opening requirement. The dealer rotates every hand.
@@ -57,10 +71,13 @@ export default function RulesScreen() {
         <Section title="The eight hands">
           {PHASES.map((phase, i) => (
             <View key={phase.condition} style={styles.phase}>
-              <Text style={styles.phaseName}>
-                {i + 1}. {phase.name}
-              </Text>
-              <Text style={styles.body}>{phase.description}</Text>
+              <View style={styles.phaseNumber}>
+                <Text style={styles.phaseNumberText}>{i + 1}</Text>
+              </View>
+              <View style={styles.phaseText}>
+                <Text style={styles.phaseName}>{phase.name}</Text>
+                <Text style={styles.body}>{phase.description}</Text>
+              </View>
             </View>
           ))}
         </Section>
@@ -74,7 +91,7 @@ export default function RulesScreen() {
         </Section>
 
         <Section title="Buying">
-          {BUYING_RULES.map((rule) => (
+          {BUYING.map((rule) => (
             <Text key={rule} style={styles.bullet}>
               • {rule}
             </Text>
@@ -89,14 +106,6 @@ export default function RulesScreen() {
           ))}
         </Section>
 
-        <Section title="Playing online">
-          <Text style={styles.body}>
-            Host a table or join with a four-letter invite code. Every turn has a time limit; if you run out, a computer
-            player plays your turn, and after two missed turns it takes your seat until you tap I&apos;m back. Empty seats can be
-            filled with computer players.
-          </Text>
-        </Section>
-
         <Section title="Scoring">
           <Text style={styles.body}>When someone goes out, everyone else scores the cards left in their hand:</Text>
           {SCORING.map((rule) => (
@@ -107,31 +116,63 @@ export default function RulesScreen() {
           <Text style={styles.body}>After eight hands, the lowest total wins (in Own pace mode, see above).</Text>
         </Section>
 
-        <Button label="Back" onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
+        <Section title="Stakes">
+          {STAKES_RULES.map((rule) => (
+            <Text key={rule} style={styles.bullet}>
+              • {rule}
+            </Text>
+          ))}
+        </Section>
+
+        {onlineEnabled && (
+          <Section title="Playing online">
+            <Text style={styles.body}>{ONLINE_RULES}</Text>
+          </Section>
+        )}
+
+        <Button label="Back to the table" onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
       </ScrollView>
-    </SafeAreaView>
+    </Screen>
   );
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <View style={styles.section}>
+    <Appear style={styles.section}>
       <Text style={styles.sectionTitle} accessibilityRole="header">
         {title}
       </Text>
       {children}
-    </View>
+    </Appear>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.felt },
   content: { padding: spacing.lg, gap: spacing.lg, width: '100%', maxWidth: 720, alignSelf: 'center' },
-  title: { color: colors.gold, fontSize: 32, fontWeight: '900' },
-  section: { backgroundColor: colors.feltLight, borderRadius: radius.lg, padding: spacing.lg, gap: spacing.sm },
-  sectionTitle: { color: colors.text, fontSize: 18, fontWeight: '800' },
+  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: spacing.md },
+  title: { color: colors.gold, fontSize: 36, fontFamily: fonts.displayHeavy },
+  section: {
+    backgroundColor: colors.panel,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.panelBorder,
+    padding: spacing.lg + 2,
+    gap: spacing.sm + 2,
+  },
+  sectionTitle: { color: colors.text, fontSize: 20, fontFamily: fonts.display },
   body: { color: colors.text, fontSize: 15, lineHeight: 22 },
   bullet: { color: colors.text, fontSize: 15, lineHeight: 22 },
-  phase: { gap: 2 },
-  phaseName: { color: colors.gold, fontSize: 15, fontWeight: '700' },
+  phase: { flexDirection: 'row', gap: spacing.md, alignItems: 'flex-start' },
+  phaseNumber: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: colors.goldSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+  },
+  phaseNumberText: { color: colors.gold, fontWeight: '900', fontSize: 13 },
+  phaseText: { flex: 1, gap: 2 },
+  phaseName: { color: colors.gold, fontSize: 15, fontWeight: '800' },
 });

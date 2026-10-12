@@ -5,19 +5,19 @@ import {
   GameRuleError,
   GameState,
   PlayerView,
-  actorsToMove,
   applyAction,
+  canBuy,
   chooseBotAction,
+  chooseBotBuy,
   createGame,
   currentPlayer,
-  getPlayer,
   getPlayerView,
   safeBotAction,
 } from '@quaranta/shared';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import { saveGame } from '@/services/gameRepository';
 import { BOT_NAMES } from '@/botNames';
+import { saveGame } from '@/services/gameRepository';
 import { TableUi, createTableSlice, reconcileSelection } from './tableSlice';
 
 export type { SortOrder, StoreMessage } from './tableSlice';
@@ -42,6 +42,19 @@ export function localView(game: GameState | null, humanId: string | null): Playe
   return game && humanId ? getPlayerView(game, humanId) : null;
 }
 
+/** When a buy window opens, every bot that isn't playing decides whether to ask for the card. */
+function runBotBuys(previous: GameState, next: GameState): GameState {
+  const window = next.buyWindow;
+  if (!window || previous.buyWindow?.cardId === window.cardId) return next;
+  let state = next;
+  for (const player of state.players) {
+    if (player.isBot && canBuy(state, player.id) && chooseBotBuy(state, player.id)) {
+      state = applyAction(state, { type: 'buy', playerId: player.id });
+    }
+  }
+  return state;
+}
+
 /**
  * Cloud saves happen when a hand starts or ends and when play comes back around to the human,
  * rather than after every move: about 70 writes a game instead of 280. The device keeps the
@@ -63,7 +76,7 @@ export const useGameStore = create<GameStore>()(
 
         let next: GameState;
         try {
-          next = applyAction(game, action);
+          next = runBotBuys(game, applyAction(game, action));
         } catch (error) {
           if (error instanceof GameRuleError) {
             set({ message: { text: error.message, tone: 'error' } });
@@ -124,33 +137,34 @@ export const useGameStore = create<GameStore>()(
             selectedIds: [],
             stagedMelds: [],
             message: null,
+            buyPassedKey: null,
             botActionsThisTurn: 0,
           });
           void saveGame(game, createdAt);
         },
 
-        quitGame: () => set({ game: null, humanId: null, createdAt: null, selectedIds: [], stagedMelds: [], message: null }),
+        quitGame: () =>
+          set({ game: null, humanId: null, createdAt: null, selectedIds: [], stagedMelds: [], message: null, buyPassedKey: null }),
 
         runBotStep: () => {
           const { game, botActionsThisTurn } = get();
           if (!game || game.status !== 'playing') return;
-          // Several bots can be deciding whether to buy at once; the human may be one of the players being waited on.
-          const botId = actorsToMove(game).find((id) => getPlayer(game, id).isBot);
-          if (!botId) return;
+          const bot = currentPlayer(game);
+          if (!bot.isBot) return;
 
           // A bot that keeps acting without ending its turn is made to discard.
-          const stuck = currentPlayer(game).id === botId && !game.buyOffer && botActionsThisTurn >= MAX_BOT_ACTIONS_PER_TURN;
-          const action = stuck && game.turnStage === 'play' ? safeBotAction(game, botId) : chooseBotAction(game, botId);
+          const stuck = botActionsThisTurn >= MAX_BOT_ACTIONS_PER_TURN && game.turnStage === 'play';
+          const action = stuck ? safeBotAction(game, bot.id) : chooseBotAction(game);
           set({ botActionsThisTurn: botActionsThisTurn + 1 });
           // If the bot chose an illegal move, fall back to something always legal.
-          if (!dispatch(action)) dispatch(safeBotAction(game, botId));
+          if (!dispatch(action)) dispatch(safeBotAction(game, bot.id));
         },
       };
     },
     {
       name: 'quaranta-game',
       storage: createJSONStorage(() => AsyncStorage),
-      version: 2,
+      version: 3,
       migrate: (persisted, fromVersion) => {
         const state = persisted as { game: GameState | null };
         if (state.game) state.game = migrateGame(state.game, fromVersion);
@@ -174,13 +188,22 @@ export function migrateGame(saved: GameState, fromVersion: number): GameState {
   if (fromVersion < 1) {
     game = { ...game, version: game.version ?? 0, reshuffles: game.reshuffles ?? 0 };
   }
-  // v1 games predate buying and the own-pace mode.
+  // v1 games predate buying and stakes.
   if (fromVersion < 2) {
     game = {
       ...game,
+      buyWindow: game.buyWindow ?? null,
+      firstDiscardId: game.firstDiscardId ?? null,
+      pot: game.pot ?? 0,
+      purses: game.purses ?? Object.fromEntries(game.players.map((p) => [p.id, 0])),
+      results: game.results.map((r) => ({ ...r, pot: r.pot ?? 0 })),
+    };
+  }
+  // v2 games predate the own-pace mode and per-player openings.
+  if (fromVersion < 3) {
+    game = {
+      ...game,
       mode: game.mode ?? 'classic',
-      discardBuyable: game.discardBuyable ?? false,
-      buyOffer: game.buyOffer ?? null,
       players: game.players.map((p) => ({ ...p, phaseIndex: p.phaseIndex ?? game.phaseIndex })),
       results: game.results.map((r) => ({
         ...r,

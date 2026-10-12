@@ -3,8 +3,10 @@ import {
   GameAction,
   GamePlayer,
   GameState,
-  actorsToMove,
-  buyBlockReason,
+  buyableCard,
+  canBuy,
+  canDrawFromDeck,
+  currentPlayer,
   discardableCardIds,
   getPlayer,
   phaseOf,
@@ -295,32 +297,43 @@ function shouldTakeDiscard(state: GameState, player: GamePlayer): boolean {
   return findOpeningMelds([...player.hand, card], condition) !== null;
 }
 
-/** Bots only buy a card that really helps them. */
-function shouldBuy(state: GameState, player: GamePlayer): boolean {
-  const card = state.buyOffer?.card;
-  if (!card || buyBlockReason(state, player.id)) return false;
-
-  if (player.isOpen) {
-    return state.melds.some((m) => tryAddToMeld(m, [card])) || formsNewMeld(card, player.hand);
-  }
-  const condition = phaseOf(player).condition;
-  return findOpeningMelds(player.hand, condition) === null && findOpeningMelds([...player.hand, card], condition) !== null;
-}
+/** Bots stop buying once their hand is this big; it also keeps the meld search bounded. */
+const MAX_HAND_FOR_BUYING = 15;
+/** An opponent this close to going out makes extra cards too risky to take on. */
+const RISKY_HAND_SIZE = 3;
+/** How well a card must fit the hand (see keepScore) before a bot buys it on spec. */
+const BUY_FIT_THRESHOLD = 2.5;
 
 /**
- * Decides the next action for a bot. By default that's the first player the game is waiting on:
- * the bot whose turn it is, or a bot deciding whether to buy a discard. Call repeatedly until
- * the turn passes.
+ * Whether a bot should ask to buy the card on offer. A bought card is one more card to get rid
+ * of, so bots buy when it completes their opening or a new meld, and only buy cheap cards that
+ * merely help when nobody is about to go out.
  */
-export function chooseBotAction(state: GameState, playerId: string = actorsToMove(state)[0]): GameAction {
+export function chooseBotBuy(state: GameState, playerId: string): boolean {
+  if (!canBuy(state, playerId)) return false;
+  const card = buyableCard(state)!;
   const player = getPlayer(state, playerId);
+  if (player.hand.length >= MAX_HAND_FOR_BUYING) return false;
 
-  if (state.buyOffer) {
-    return { type: shouldBuy(state, player) ? 'buy' : 'passBuy', playerId };
-  }
+  const danger = state.players.some((p) => p.id !== playerId && p.isOpen && p.hand.length <= RISKY_HAND_SIZE);
+  if (player.isOpen) return !danger && formsNewMeld(card, player.hand);
+
+  const condition = phaseOf(player).condition;
+  if (findOpeningMelds(player.hand, condition) !== null) return false;
+  const withCard = [...player.hand, card];
+  if (findOpeningMelds(withCard, condition) !== null) return true;
+  if (danger || condition === 'allDown') return false;
+  return handPoints([card], condition) <= 10 && keepScore(card, withCard, OPENING_WEIGHTS[condition]) >= BUY_FIT_THRESHOLD;
+}
+
+/** Decides the next action for the bot whose turn it is. Call repeatedly until the turn passes. */
+export function chooseBotAction(state: GameState): GameAction {
+  const player = currentPlayer(state);
+  const playerId = player.id;
 
   if (state.turnStage === 'draw') {
-    return shouldTakeDiscard(state, player) ? { type: 'drawFromDiscard', playerId } : { type: 'drawFromDeck', playerId };
+    const takeDiscard = shouldTakeDiscard(state, player) || !canDrawFromDeck(state);
+    return takeDiscard ? { type: 'drawFromDiscard', playerId } : { type: 'drawFromDeck', playerId };
   }
 
   if (!player.isOpen) {
@@ -350,11 +363,13 @@ export function chooseBotAction(state: GameState, playerId: string = actorsToMov
 }
 
 /**
- * A move that's always legal for the player the game is waiting on: pass on a buy, draw from the
- * deck, or throw away a card. For when a bot's usual choice is rejected or a turn has to be ended.
+ * A move that's always legal for the player whose turn it is: draw (from the deck, or the discard
+ * pile if the deck is empty) or throw away a card. For when a bot's usual choice is rejected or a
+ * turn has to be ended on someone's behalf.
  */
 export function safeBotAction(state: GameState, playerId: string): GameAction {
-  if (state.buyOffer) return { type: 'passBuy', playerId };
-  if (state.turnStage === 'draw') return { type: 'drawFromDeck', playerId };
+  if (state.turnStage === 'draw') {
+    return { type: canDrawFromDeck(state) ? 'drawFromDeck' : 'drawFromDiscard', playerId };
+  }
   return { type: 'discard', playerId, cardId: discardableCardIds(state, playerId)[0] };
 }

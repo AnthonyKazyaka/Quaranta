@@ -90,7 +90,7 @@ Security rules for this are small: everything is read-only to clients except thr
 1. `getPlayerView(state, playerId)`: the redacted view, promoted from the spike, with tests asserting nothing hidden leaks.
 2. `version` on `GameState`, incremented by every action, for optimistic concurrency and stale-move rejection.
 3. Seats keyed by Firebase uid (`PlayerSetup.id` already allows custom ids).
-4. **Buying** (done): `GameState.buyOffer` holds the discard for sale, the players who may buy it in priority order, and their answers. The `buy` and `passBuy` actions can arrive in any order and the offer resolves as soon as the highest-priority buyer is known, so it doesn't depend on who answers first over the network. `actorsToMove(state)` says whom the game is waiting on, which is what the server needs to set a turn clock. Rules chosen: a buyer takes just the card (no penalty), the discarder can't buy it back, no jokers or first card, no limit on buys.
+4. **Buying**: done in the engine. `GameState.buyWindow` opens when the current player draws from the deck; anyone else sends `{ type: 'buy' }` while it's open, and requests settle in turn order when that player discards. Because priority is by seat rather than by who asked first, network latency doesn't decide who gets the card. Online play still needs a buy prompt and the bot-pause the single-player store uses (`BUY_DECISION_MS` in `mobile/app/game.tsx`) turned into a server-side wait.
 5. Keep time out of the engine; Functions own deadlines and timestamps.
 
 ## Mock layer (what exists today)
@@ -98,8 +98,8 @@ Security rules for this are small: everything is read-only to clients except thr
 Everything the app needs from the network goes through `OnlineService` (`mobile/src/services/online/types.ts`): `createTable`, `joinTable`, `startGame`, `setSeat`, `submitAction`, `leaveTable`, `resumeSeat`, `listMyTables` and `subscribe`. `MockOnlineService` implements it in memory using the real engine (`applyAction`, `getPlayerView`, `chooseBotAction`) so the screens and stores behave as they will against Functions and Firestore:
 
 - Latency on every call, snapshots pushed to subscribers, out-of-order snapshots ignored by version.
-- `submitAction` rejects stale turn moves (`expectedVersion`), moves for other players, and rule violations (surfaced as the engine's message). Buy answers skip the version check because they're concurrent by design.
-- Turn clocks: one per turn (or per 15 s buy window); when it runs out a bot plays the turn, and after two missed turns the seat is taken over until the player taps "I'm back".
+- `submitAction` rejects stale turn moves (`expectedVersion`), moves for other players, and rule violations (surfaced as the engine's message). Buy requests skip the version check because they come from players who aren't on the move.
+- Turn clocks: one per turn; when it runs out a bot plays the turn, and after two missed turns the seat is taken over until the player taps "I'm back".
 - Presence and reconnecting: the demo controls drop the connection (calls fail with `offline`, the UI locks) and bring it back (the client catches up from one snapshot).
 - Simulated friends who join, play at human speed and can be frozen; seeded tables `DEMO`, `FULL` and `DONE` for the join flows and errors.
 
@@ -109,7 +109,9 @@ Still to do for the real thing: the Firebase `OnlineService` (Milestone 1 and 3)
 
 ### Defaults chosen for the open decisions
 
-These keep the demo moving and are all easy to change: live games with 15 s to 2 min turns (decision 2), anonymous play with a stubbed Google link (3), the buying rules above (4), and 2 to 4 seats (5). Decision 1 (Blaze) still blocks the real backend.
+These keep the demo moving and are all easy to change: live games with 15 s to 2 min turns (decision 2), anonymous play with a stubbed Google link (3), the buying rules in the README (4), and 2 to 4 seats (5). Decision 1 (Blaze) still blocks the real backend.
+
+Buying works the same way online: the server (here, the mock) lets computer players and active friends decide as soon as a buy window opens, and a human sends `{ type: 'buy' }` while it's open. Requests settle in turn order when the current player discards.
 
 ## Milestones
 
@@ -129,12 +131,12 @@ These keep the demo moving and are all easy to change: live games with 15 s to 2
 | 2 | Lobby UI: create, share code, join, seat list, start with bot fill. **UI done on the mock**; needs the real service | Yes (backend) |
 | 3 | In-game sync: subscribe to the public doc and own hand; server-confirmed moves with pending states. **UI done on the mock** | Yes (backend) |
 | 4 | Timeouts and bot takeover, reconnect, presence (Realtime Database `onDisconnect`). **UI and behaviour done on the mock**; server timers and presence still to build | Yes (backend) |
-| 5 | Buying rule (**engine and UI done**), turn notifications (Expo push / FCM; in-app toast done), Google sign-in linked to the anonymous account (stub done), App Check | Yes (backend) |
+| 5 | Buying rule (**engine and UI done**, see item 4 above), turn notifications (Expo push / FCM; in-app toast done), Google sign-in linked to the anonymous account (stub done), App Check | Yes (backend) |
 
 ## Decisions needed
 
 1. **Upgrade to Blaze** so Functions can run (needs a billing account; only the project owner can do this in the console).
 2. **Live or asynchronous games?** Live (minutes-long turn timer, everyone online) is simpler. Async (hours to move, notifications) changes timers and makes push notifications essential.
 3. **Identity:** stay anonymous for the first release, or add Google sign-in now so games follow players across devices?
-4. **Buying rule details:** who gets priority (a buy takes just the one card, with no limit per hand).
+4. ~~**Buying rule details**~~: decided. Priority in turn order, no penalty card, no limit; buying costs 10¢ into the pot (see README).
 5. **Seat count online:** 2 to 4 (matches the app today) or up to 6 (the engine supports it).

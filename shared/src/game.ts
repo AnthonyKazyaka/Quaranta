@@ -7,8 +7,6 @@ import { handPoints } from './scoring';
 export const CARDS_PER_PLAYER = 13;
 export const MIN_PLAYERS = 2;
 export const MAX_PLAYERS = 6;
-/** A hand ends with no winner if the deck runs out more than this many times. */
-export const MAX_RESHUFFLES_PER_HAND = 2;
 /** The own-pace mode stops after this many hands even if nobody has finished all eight openings. */
 export const MAX_PACED_HANDS = 20;
 const MAX_LOG_ENTRIES = 40;
@@ -19,6 +17,12 @@ const MAX_LOG_ENTRIES = 40;
  *   opening after a hand in which you opened, and the first to finish All Down wins.
  */
 export type GameMode = 'classic' | 'paced';
+
+/**
+ * Table stakes, in cents. Everyone antes into the pot each hand and buying a card adds to it;
+ * whoever goes out takes the pot, and the game's winner collects from everyone else.
+ */
+export const STAKES = { ante: 25, buy: 10, gameWin: 50 } as const;
 
 export interface PlayerSetup {
   id?: string;
@@ -46,31 +50,33 @@ export interface TableMeld {
 export interface RoundResult {
   /** Which hand this was (0-based). In classic mode this is also the opening everyone played. */
   phaseIndex: number;
-  /** Null when the deck ran dry before anybody went out. */
+  /** Who went out. Null only in games saved before every hand had to end that way. */
   winnerId: string | null;
   points: Record<string, number>;
+  /** Cents the winner took from the pot. */
+  pot: number;
   /** Each player's opening this hand, by index into `PHASES`. */
   phases: Record<string, number>;
   /** Players who opened this hand, which is what moves them on in paced mode. */
   opened: string[];
 }
 
-/**
- * A discard that other players may buy. It opens when the current player draws from the deck
- * instead of taking the discard, and closes once the highest-priority player who wants the card
- * has bought it or everyone has passed.
- */
-export interface BuyOffer {
-  card: Card;
-  /** Players who may buy, in priority order (turn order from the current player's left). */
-  eligible: string[];
-  responses: Record<string, 'buy' | 'pass'>;
-}
-
 export interface GameLogEntry {
   id: number;
   playerId: string | null;
   message: string;
+}
+
+/**
+ * Buying: once the current player draws from the deck, anyone else may ask to buy the top
+ * discard they passed over. The window stays open until that player ends their turn; then the
+ * first requester in turn order after them gets the card. Buyers take only that card, so the
+ * cost is holding more points if someone goes out.
+ */
+export interface BuyWindow {
+  cardId: string;
+  /** Players who asked to buy the card, in the order they asked. */
+  requests: string[];
 }
 
 export type GameStatus = 'playing' | 'roundOver' | 'gameOver';
@@ -96,11 +102,16 @@ export interface GameState {
   /** Top card of each pile is the last element. */
   deck: Card[];
   discardPile: Card[];
-  /** The top discard was thrown by a player and hasn't yet been offered for buying. */
-  discardBuyable: boolean;
-  buyOffer: BuyOffer | null;
   /** How many times the discard pile has been turned into a new deck this hand. */
   reshuffles: number;
+  /** The open buy window, if the current player drew from the deck this turn. */
+  buyWindow: BuyWindow | null;
+  /** The card turned up when the hand was dealt, until someone discards over it. It's the one card (besides jokers) that can't be bought. */
+  firstDiscardId: string | null;
+  /** Cents in the pot this hand. */
+  pot: number;
+  /** Each player's net winnings in cents. Negative while they're down. */
+  purses: Record<string, number>;
   melds: TableMeld[];
   results: RoundResult[];
   status: GameStatus;
@@ -118,8 +129,8 @@ export type GameAction =
   | { type: 'addToMeld'; playerId: string; meldId: string; cardIds: string[] }
   | { type: 'swapJoker'; playerId: string; meldId: string; cardId: string }
   | { type: 'discard'; playerId: string; cardId: string }
+  /** Out of turn: ask to buy the top discard while a buy window is open. */
   | { type: 'buy'; playerId: string }
-  | { type: 'passBuy'; playerId: string }
   | { type: 'nextRound' };
 
 /** Raised when an action breaks the rules. The message is suitable for showing to players. */
@@ -177,6 +188,24 @@ export function totalScores(state: Scoreboard): Record<string, number> {
   return totals;
 }
 
+/** Moves cents from a player's purse into the pot. */
+function payIntoPot(state: GameState, playerId: string, cents: number): GameState {
+  const purses = state.purses ?? {};
+  return { ...state, pot: (state.pot ?? 0) + cents, purses: { ...purses, [playerId]: (purses[playerId] ?? 0) - cents } };
+}
+
+function credit(state: GameState, playerId: string, cents: number): GameState {
+  const purses = state.purses ?? {};
+  return { ...state, purses: { ...purses, [playerId]: (purses[playerId] ?? 0) + cents } };
+}
+
+/** Formats cents as "25¢" or "$1.25". */
+export function formatCents(cents: number): string {
+  const sign = cents < 0 ? '-' : '';
+  const abs = Math.abs(cents);
+  return abs < 100 ? `${sign}${abs}¢` : `${sign}$${(abs / 100).toFixed(2)}`;
+}
+
 /** How many hands the player opened in. In paced mode that's how many openings they've finished. */
 export function openingsCompleted(state: Scoreboard, playerId: string): number {
   return state.results.filter((r) => r.opened?.includes(playerId)).length;
@@ -193,11 +222,33 @@ export function leaders<P extends { id: string }>(state: Scoreboard<P>): P[] {
   return state.players.filter((p) => progress(p) === progress(best) && totals[p.id] === totals[best.id]);
 }
 
+/** The card on offer in the open buy window, if there is one. */
+export function buyableCard(state: GameState): Card | null {
+  const window = state.buyWindow;
+  const top = topDiscard(state);
+  return window && top?.id === window.cardId ? top : null;
+}
+
+/** Whether the deck has a card to draw, counting a reshuffle of the discard pile under its top card. */
+export function canDrawFromDeck(state: GameState): boolean {
+  return state.deck.length > 0 || state.discardPile.length > 1;
+}
+
+/** Whether a player may ask to buy the top discard right now. */
+export function canBuy(state: GameState, playerId: string): boolean {
+  return (
+    state.status === 'playing' &&
+    buyableCard(state) !== null &&
+    currentPlayer(state).id !== playerId &&
+    !state.buyWindow!.requests.includes(playerId)
+  );
+}
+
 /** Why a card can't be discarded right now, ignoring the "nothing else is discardable" fallback. */
 function discardBlockReason(state: GameState, player: GamePlayer, card: Card): string | null {
   if (isJoker(card)) return null;
 
-  const condition = phaseOf(player).condition;
+  const condition = currentPhase(state).condition;
   if (restrictsHighCardDiscards(condition) && isHighRank(card.rank) && state.players.some((p) => !p.isOpen)) {
     return "High cards can't be discarded until everyone has opened.";
   }
@@ -264,9 +315,11 @@ export function createGame({ players, id, seed = randomSeed(), mode = 'classic' 
     openedThisTurn: false,
     deck: [],
     discardPile: [],
-    discardBuyable: false,
-    buyOffer: null,
     reshuffles: 0,
+    buyWindow: null,
+    firstDiscardId: null,
+    pot: 0,
+    purses: Object.fromEntries(ids.map((playerId) => [playerId, 0])),
     melds: [],
     results: [],
     status: 'playing',
@@ -314,20 +367,17 @@ function dealRound(state: GameState, handIndex: number, dealerIndex: number): Ga
     openedThisTurn: false,
     deck,
     discardPile: [firstDiscard],
-    discardBuyable: false,
-    buyOffer: null,
     reshuffles: 0,
+    buyWindow: null,
+    firstDiscardId: firstDiscard.id,
     melds: [],
     status: 'playing',
     rngState,
   };
 
-  const dealer = state.players[dealerIndex].name;
-  const message =
-    state.mode === 'paced'
-      ? `Hand ${handIndex + 1}. ${dealer} deals.`
-      : `Hand ${handIndex + 1}: ${PHASES[handIndex].name}. ${dealer} deals.`;
-  return addLog(dealt, message);
+  const anted = dealt.players.reduce((next, p) => payIntoPot(next, p.id, STAKES.ante), dealt);
+  const hand = state.mode === 'paced' ? `Hand ${handIndex + 1}` : `Hand ${handIndex + 1}: ${PHASES[handIndex].name}`;
+  return addLog(anted, `${hand}. ${state.players[dealerIndex].name} deals. The pot is ${formatCents(anted.pot)}.`);
 }
 
 // ---------------------------------------------------------------------------
@@ -345,28 +395,49 @@ function takeFromHand(player: GamePlayer, cardIds: string[]): { cards: Card[]; r
   return { cards, remaining };
 }
 
-const LAST_PHASE = PHASES.length - 1;
-
-function endRound(state: GameState, winnerId: string | null): GameState {
+function endRound(ending: GameState, winnerId: string): GameState {
+  // A pending buy goes through before scoring: the buyer is left holding the card.
+  const state = settleBuy(ending);
   const points = Object.fromEntries(state.players.map((p) => [p.id, handPoints(p.hand, phaseOf(p).condition)]));
   const phases = Object.fromEntries(state.players.map((p) => [p.id, p.phaseIndex]));
   const opened = state.players.filter((p) => p.isOpen).map((p) => p.id);
+  const lastPhase = PHASES.length - 1;
   const isFinished =
     state.mode === 'paced'
-      ? state.players.some((p) => p.isOpen && p.phaseIndex === LAST_PHASE) || state.phaseIndex + 1 >= MAX_PACED_HANDS
-      : state.phaseIndex === LAST_PHASE;
+      ? state.players.some((p) => p.isOpen && p.phaseIndex === lastPhase) || state.phaseIndex + 1 >= MAX_PACED_HANDS
+      : state.phaseIndex === lastPhase;
 
-  const ended: GameState = {
-    ...state,
-    buyOffer: null,
-    results: [...state.results, { phaseIndex: state.phaseIndex, winnerId, points, phases, opened }],
+  // Whoever went out takes the pot.
+  const pot = state.pot ?? 0;
+  let ended: GameState = {
+    ...credit(state, winnerId, pot),
+    pot: 0,
+    results: [...state.results, { phaseIndex: state.phaseIndex, winnerId, points, pot, phases, opened }],
     status: isFinished ? 'gameOver' : 'roundOver',
   };
+  ended = addLog(ended, `${getPlayer(state, winnerId).name} went out and takes the ${formatCents(pot)} pot!`, winnerId);
+  return isFinished ? payGameWinners(ended) : ended;
+}
 
-  const message = winnerId
-    ? `${getPlayer(state, winnerId).name} went out!`
-    : 'The deck ran out. Nobody went out this hand.';
-  return addLog(ended, message, winnerId);
+/** The game's winner collects from everyone else. Players tied for first split the payments. */
+function payGameWinners(state: GameState): GameState {
+  const winners = leaders(state);
+  const winnerIds = new Set(winners.map((w) => w.id));
+  let next = state;
+  let collected = 0;
+  for (const player of state.players) {
+    if (winnerIds.has(player.id)) continue;
+    next = credit(next, player.id, -STAKES.gameWin);
+    collected += STAKES.gameWin;
+  }
+
+  // Split evenly; any odd cents go to the first winner at the table.
+  const share = Math.floor(collected / winners.length);
+  winners.forEach((winner, i) => {
+    next = credit(next, winner.id, share + (i === 0 ? collected - share * winners.length : 0));
+  });
+  const names = winners.map((w) => w.name).join(' & ');
+  return addLog(next, `${names} ${winners.length > 1 ? 'split' : 'collects'} ${formatCents(collected)} for winning the game.`);
 }
 
 /** Ends the round if the player just emptied their hand. */
@@ -387,99 +458,56 @@ function drawFromDeck(state: GameState, player: GamePlayer): GameState {
 
   let next = state;
   if (next.deck.length === 0) {
-    if (next.reshuffles >= MAX_RESHUFFLES_PER_HAND) {
-      return endRound(next, null);
-    }
-    // Reshuffle everything but the top discard into a new deck.
+    // Reshuffle everything but the top discard into a new deck, as often as it takes: a hand
+    // only ends when someone goes out.
     const top = next.discardPile[next.discardPile.length - 1];
     const rest = next.discardPile.slice(0, -1).map(resetCard);
     const [deck, rngState] = shuffle(rest, next.rngState);
     next = { ...next, deck, discardPile: top ? [top] : [], reshuffles: next.reshuffles + 1, rngState };
     if (deck.length > 0) next = addLog(next, 'The discard pile was shuffled into a new deck.');
   }
-  if (next.deck.length === 0) {
-    return endRound(next, null);
-  }
+  if (next.deck.length === 0) fail('The deck is empty. Take the top discard.');
 
   const card = next.deck[next.deck.length - 1];
+  // Passing over the top discard puts it up for sale, except the card turned up at the deal and jokers.
+  const passed = topDiscard(next);
+  const buyable = passed && !isJoker(passed) && passed.id !== next.firstDiscardId ? passed : null;
   next = {
     ...updatePlayer(next, player.id, { hand: [...player.hand, card] }),
     deck: next.deck.slice(0, -1),
     turnStage: 'play',
-    discardBuyable: false,
-    buyOffer: state.discardBuyable ? openBuyOffer(next) : null,
+    buyWindow: buyable ? { cardId: buyable.id, requests: [] } : null,
   };
   return addLog(next, `${player.name} drew from the deck.`, player.id);
 }
 
-/** Other players may buy the top discard if the current player passed it up (never a joker). */
-function openBuyOffer(state: GameState): BuyOffer | null {
-  const card = topDiscard(state);
-  if (!card || isJoker(card)) return null;
+function requestBuy(state: GameState, buyer: GamePlayer): GameState {
+  const card = buyableCard(state) ?? fail("There's no card to buy right now.");
+  if (currentPlayer(state).id === buyer.id) fail("You can't buy on your own turn.");
+  if (state.buyWindow!.requests.includes(buyer.id)) fail(`You've already asked to buy ${cardLabel(card)}.`);
+
+  const next = { ...state, buyWindow: { ...state.buyWindow!, requests: [...state.buyWindow!.requests, buyer.id] } };
+  return addLog(next, `${buyer.name} put in to buy ${cardLabel(card)}.`, buyer.id);
+}
+
+/** Closes the buy window, giving the card to the first requester in turn order after the current player. */
+function settleBuy(state: GameState): GameState {
+  const window = state.buyWindow;
+  const card = buyableCard(state);
+  const closed: GameState = { ...state, buyWindow: null };
+  if (!window || !card || window.requests.length === 0) return closed;
 
   const count = state.players.length;
-  const discarderIndex = (state.currentPlayerIndex + count - 1) % count;
-  const eligible: string[] = [];
-  for (let step = 1; step < count; step++) {
-    const index = (state.currentPlayerIndex + step) % count;
-    const candidate = state.players[index];
-    if (index !== discarderIndex) eligible.push(candidate.id);
-  }
-  return eligible.length > 0 ? { card, eligible, responses: {} } : null;
-}
+  const buyer = Array.from({ length: count - 1 }, (_, i) => state.players[(state.currentPlayerIndex + 1 + i) % count]).find(
+    (p) => window.requests.includes(p.id),
+  );
+  if (!buyer) return closed;
 
-/** Ids of the players the game is waiting on: buyers who haven't answered, otherwise whoever's turn it is. */
-export function actorsToMove(state: GameState): string[] {
-  if (state.status !== 'playing') return [];
-  if (state.buyOffer) {
-    const { eligible, responses } = state.buyOffer;
-    return eligible.filter((id) => !responses[id]);
-  }
-  return [currentPlayer(state).id];
-}
-
-/** Why a player can't answer the open buy offer, or null if they can. */
-export function buyBlockReason(state: GameState, playerId: string): string | null {
-  const offer = state.buyOffer;
-  if (!offer) return 'There is nothing to buy right now.';
-  if (!state.players.some((p) => p.id === playerId)) return 'Unknown player.';
-  if (!offer.eligible.includes(playerId)) return "You can't buy this card.";
-  if (offer.responses[playerId]) return 'You have already answered.';
-  return null;
-}
-
-/** Settles the offer once the highest-priority buyer is known, or everyone has passed. */
-function resolveBuyOffer(state: GameState): GameState {
-  const offer = state.buyOffer;
-  if (!offer) return state;
-
-  for (const id of offer.eligible) {
-    const response = offer.responses[id];
-    if (!response) return state;
-    if (response === 'buy') return completeBuy(state, id, offer.card);
-  }
-  return { ...state, buyOffer: null };
-}
-
-function completeBuy(state: GameState, buyerId: string, card: Card): GameState {
-  const buyer = getPlayer(state, buyerId);
   const next: GameState = {
-    ...updatePlayer(state, buyerId, { hand: [...buyer.hand, card] }),
+    ...payIntoPot(updatePlayer(closed, buyer.id, { hand: [...buyer.hand, card] }), buyer.id, STAKES.buy),
     discardPile: state.discardPile.slice(0, -1),
-    buyOffer: null,
   };
-  return addLog(next, `${buyer.name} bought ${cardLabel(card)}.`, buyerId);
-}
-
-function respondToBuy(state: GameState, playerId: string, wantsToBuy: boolean): GameState {
-  const reason = buyBlockReason(state, playerId);
-  if (reason) fail(reason);
-  const offer = state.buyOffer as BuyOffer;
-  const answered: GameState = {
-    ...state,
-    buyOffer: { ...offer, responses: { ...offer.responses, [playerId]: wantsToBuy ? 'buy' : 'pass' } },
-  };
-  return resolveBuyOffer(answered);
+  return addLog(next, `${buyer.name} bought ${cardLabel(card)} for ${formatCents(STAKES.buy)}.`, buyer.id);
 }
 
 function drawFromDiscard(state: GameState, player: GamePlayer): GameState {
@@ -490,7 +518,6 @@ function drawFromDiscard(state: GameState, player: GamePlayer): GameState {
     ...updatePlayer(state, player.id, { hand: [...player.hand, card] }),
     discardPile: state.discardPile.slice(0, -1),
     turnStage: 'play',
-    discardBuyable: false,
   };
   return addLog(next, `${player.name} picked up ${cardLabel(card)} from the discard pile.`, player.id);
 }
@@ -577,10 +604,13 @@ function discard(state: GameState, player: GamePlayer, cardId: string): GameStat
     fail(discardBlockReason(state, player, card) ?? "That card can't be discarded right now.");
   }
 
+  // Ending the turn closes the buy window before this discard covers the card on offer.
+  const settled = settleBuy(state);
   let next: GameState = {
-    ...updatePlayer(state, player.id, { hand: remaining }),
-    discardPile: [...state.discardPile, resetCard(card)],
-    discardBuyable: !isJoker(card),
+    ...updatePlayer(settled, player.id, { hand: remaining }),
+    discardPile: [...settled.discardPile, resetCard(card)],
+    // The dealt card has been covered; if it ever comes back up, it's a discard like any other.
+    firstDiscardId: null,
   };
   next = addLog(next, `${player.name} discarded ${cardLabel(card)}.`, player.id);
 
@@ -600,12 +630,10 @@ function nextRound(state: GameState): GameState {
   if (state.status !== 'roundOver') fail('The current hand is still being played.');
   const dealerIndex = (state.dealerIndex + 1) % state.players.length;
   // In paced mode, players who opened move on to their next opening; everyone else tries again.
+  const lastPhase = PHASES.length - 1;
   const advanced: GameState =
     state.mode === 'paced'
-      ? {
-          ...state,
-          players: state.players.map((p) => ({ ...p, phaseIndex: p.isOpen ? Math.min(p.phaseIndex + 1, LAST_PHASE) : p.phaseIndex })),
-        }
+      ? { ...state, players: state.players.map((p) => ({ ...p, phaseIndex: p.isOpen ? Math.min(p.phaseIndex + 1, lastPhase) : p.phaseIndex })) }
       : state;
   return dealRound(advanced, state.phaseIndex + 1, dealerIndex);
 }
@@ -620,11 +648,9 @@ function reduce(state: GameState, action: GameAction): GameState {
   if (action.type === 'nextRound') return nextRound(state);
 
   if (state.status !== 'playing') fail('This hand is over.');
-  if (action.type === 'buy' || action.type === 'passBuy') return respondToBuy(state, action.playerId, action.type === 'buy');
-
+  if (action.type === 'buy') return requestBuy(state, getPlayer(state, action.playerId));
   const player = currentPlayer(state);
   if (player.id !== action.playerId) fail(`It's ${player.name}'s turn.`);
-  if (state.buyOffer) fail(`Waiting to see whether anyone buys ${cardLabel(state.buyOffer.card)}.`);
 
   switch (action.type) {
     case 'drawFromDeck':

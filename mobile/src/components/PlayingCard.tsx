@@ -1,6 +1,8 @@
-import { Card, SUIT_SYMBOLS, isRedSuit, rankLabel } from '@quaranta/shared';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, radius } from '@/theme';
+import { Card, Rank, SUIT_SYMBOLS, Suit, isRedSuit, rankLabel } from '@quaranta/shared';
+import { useRef } from 'react';
+import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import { colors, fonts, shadows } from '@/theme';
+import { PressState, prefersReducedMotion, useNativeDriver, useSpring } from './motion';
 
 interface PlayingCardProps {
   card: Card;
@@ -20,41 +22,31 @@ export function cardAccessibilityLabel(card: Card): string {
   return `${rankLabel(card.rank)} of ${card.suit}`;
 }
 
+export function cardHeight(width: number): number {
+  return Math.round(width * 1.4);
+}
+
+function cardRadius(width: number): number {
+  return Math.max(4, Math.round(width * 0.09));
+}
+
+const suitColor = (suit: Suit) => (isRedSuit(suit) ? colors.cardRed : colors.cardBlack);
+
 export function PlayingCard({ card, width, selected, dimmed, onPress, accessibilityHint }: PlayingCardProps) {
-  const height = Math.round(width * 1.4);
-  const value = card.joker ? card.represents : card;
-  const color = value ? (isRedSuit(value.suit) ? colors.cardRed : colors.cardBlack) : colors.cardBlack;
-  const corner = Math.max(10, Math.round(width * 0.26));
+  const height = cardHeight(width);
+  const lift = useSpring(!!selected);
+  const press = useRef(new Animated.Value(1)).current;
 
   const face = (
     <View
       style={[
         styles.card,
-        { width, height, borderRadius: Math.max(4, width * 0.1) },
+        { width, height, borderRadius: cardRadius(width) },
         selected && styles.selected,
         dimmed && styles.dimmed,
       ]}
     >
-      {card.joker ? (
-        <>
-          <Text style={[styles.joker, { fontSize: width * 0.42 }]}>★</Text>
-          <Text style={[styles.jokerLabel, { fontSize: Math.max(7, width * 0.14) }]}>JOKER</Text>
-          {value && (
-            <Text style={[styles.represents, { fontSize: Math.max(8, width * 0.17), color }]}>
-              {rankLabel(value.rank)}
-              {SUIT_SYMBOLS[value.suit]}
-            </Text>
-          )}
-        </>
-      ) : (
-        <>
-          <View style={styles.corner}>
-            <Text style={[styles.cornerRank, { fontSize: corner, lineHeight: corner * 1.05, color }]}>{rankLabel(card.rank)}</Text>
-            <Text style={{ fontSize: corner * 0.8, lineHeight: corner * 0.9, color }}>{SUIT_SYMBOLS[card.suit]}</Text>
-          </View>
-          <Text style={[styles.suit, { fontSize: width * 0.45, color }]}>{SUIT_SYMBOLS[card.suit]}</Text>
-        </>
-      )}
+      {card.joker ? <JokerFace width={width} represents={card.represents} /> : <NaturalFace width={width} rank={card.rank} suit={card.suit} />}
     </View>
   );
 
@@ -66,26 +58,98 @@ export function PlayingCard({ card, width, selected, dimmed, onPress, accessibil
     );
   }
 
+  const pressTo = (toValue: number) => {
+    if (prefersReducedMotion()) return;
+    Animated.spring(press, { toValue, friction: 6, tension: 300, useNativeDriver }).start();
+  };
+
   return (
     <Pressable
       onPress={onPress}
+      onPressIn={() => pressTo(0.95)}
+      onPressOut={() => pressTo(1)}
       accessibilityRole="button"
       accessibilityLabel={cardAccessibilityLabel(card)}
       accessibilityHint={accessibilityHint}
       accessibilityState={{ selected: !!selected }}
-      style={({ pressed }) => [{ transform: [{ translateY: selected ? -10 : pressed ? -4 : 0 }] }]}
+      style={({ hovered }: PressState) => [hovered && !selected && styles.hovered]}
     >
-      {face}
+      <Animated.View
+        style={{
+          transform: [
+            { translateY: lift.interpolate({ inputRange: [0, 1], outputRange: [0, -Math.round(height * 0.14)] }) },
+            { scale: press },
+          ],
+        }}
+      >
+        {face}
+      </Animated.View>
     </Pressable>
   );
 }
 
-export function CardBack({ width, label }: { width: number; label?: string }) {
-  const height = Math.round(width * 1.4);
+/** Rank over suit, as printed in a card's corner. */
+function CornerIndex({ label, suit, size, color, flipped }: { label: string; suit: string; size: number; color: string; flipped?: boolean }) {
   return (
-    <View style={[styles.back, { width, height, borderRadius: Math.max(4, width * 0.1) }]}>
-      <View style={styles.backInner}>
-        <Text style={[styles.backText, { fontSize: Math.max(10, width * 0.22) }]}>{label ?? 'Q'}</Text>
+    <View style={[styles.index, flipped && styles.indexFlipped]}>
+      <Text style={[styles.indexRank, { fontSize: size, lineHeight: size * 1.02, color, letterSpacing: label.length > 1 ? -1 : 0 }]}>
+        {label}
+      </Text>
+      <Text style={[styles.noSelect, { fontSize: size * 0.78, lineHeight: size * 0.86, color }]}>{suit}</Text>
+    </View>
+  );
+}
+
+function NaturalFace({ width, rank, suit }: { width: number; rank: Rank; suit: Suit }) {
+  const color = suitColor(suit);
+  const symbol = SUIT_SYMBOLS[suit];
+  const indexSize = Math.max(10, Math.round(width * 0.25));
+  // Small table cards are mostly covered by their neighbours; a plain pip reads better there.
+  const isCourt = rank > 10 && width >= 40;
+  return (
+    <>
+      <CornerIndex label={rankLabel(rank)} suit={symbol} size={indexSize} color={color} />
+      {width >= 56 && <CornerIndex label={rankLabel(rank)} suit={symbol} size={indexSize} color={color} flipped />}
+      {isCourt ? (
+        <View style={[styles.court, { borderColor: color, borderRadius: Math.max(2, width * 0.05) }]}>
+          <Text style={[styles.courtLetter, { fontSize: width * 0.4, lineHeight: width * 0.48, color }]}>{rankLabel(rank)}</Text>
+          <Text style={[styles.noSelect, { fontSize: width * 0.2, lineHeight: width * 0.24, color }]}>{symbol}</Text>
+        </View>
+      ) : (
+        <Text style={[styles.pip, { fontSize: width * (rank === 1 ? 0.6 : 0.46), color }]}>{symbol}</Text>
+      )}
+    </>
+  );
+}
+
+function JokerFace({ width, represents }: { width: number; represents: { rank: Rank; suit: Suit } | null }) {
+  const indexSize = Math.max(10, Math.round(width * 0.25));
+  return (
+    <>
+      {represents ? (
+        <CornerIndex label={rankLabel(represents.rank)} suit={SUIT_SYMBOLS[represents.suit]} size={indexSize} color={suitColor(represents.suit)} />
+      ) : (
+        <View style={styles.index}>
+          <Text style={[styles.indexRank, { fontSize: indexSize * 0.9, color: colors.goldDark }]}>★</Text>
+        </View>
+      )}
+      <View style={styles.jokerCenter}>
+        <Text style={[styles.jokerStar, { fontSize: width * 0.44, lineHeight: width * 0.5 }]}>★</Text>
+        <Text style={[styles.jokerLabel, { fontSize: Math.max(7, width * 0.13) }]}>JOKER</Text>
+      </View>
+    </>
+  );
+}
+
+export function CardBack({ width, label }: { width: number; label?: string }) {
+  const height = cardHeight(width);
+  const emblem = Math.max(16, Math.round(width * 0.5));
+  return (
+    <View style={[styles.back, { width, height, borderRadius: cardRadius(width), padding: Math.max(3, width * 0.07) }]}>
+      <View style={[styles.backInner, { borderRadius: Math.max(2, cardRadius(width) - 3) }]}>
+        <View style={[styles.backEmblem, { width: emblem, height: emblem, borderRadius: emblem / 2 }]}>
+          <Text style={[styles.backText, { fontSize: emblem * 0.56, lineHeight: emblem * 0.7 }]}>{label ?? 'Q'}</Text>
+        </View>
       </View>
     </View>
   );
@@ -98,62 +162,98 @@ const styles = StyleSheet.create({
     borderColor: colors.cardBorder,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.25,
-    shadowRadius: 3,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    overflow: 'hidden',
+    boxShadow: shadows.card,
   },
   selected: {
     borderColor: colors.selected,
-    borderWidth: 3,
+    boxShadow: shadows.cardLifted,
+  },
+  hovered: {
+    transform: [{ translateY: -3 }],
   },
   dimmed: {
     opacity: 0.45,
   },
-  corner: {
+  noSelect: {
+    userSelect: 'none',
+  },
+  index: {
     position: 'absolute',
-    top: 2,
-    left: 4,
+    top: 3,
+    left: 3,
+    alignItems: 'center',
+    minWidth: 12,
+  },
+  indexFlipped: {
+    top: undefined,
+    left: undefined,
+    bottom: 3,
+    right: 3,
+    transform: [{ rotate: '180deg' }],
+  },
+  indexRank: {
+    fontWeight: '800',
+    userSelect: 'none',
+  },
+  pip: {
+    marginTop: '18%',
+    marginLeft: '14%',
+    userSelect: 'none',
+  },
+  court: {
+    marginTop: '18%',
+    marginLeft: '14%',
+    width: '58%',
+    height: '58%',
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.cardFaceShade,
+    opacity: 0.95,
+  },
+  courtLetter: {
+    fontFamily: fonts.displayHeavy,
+    userSelect: 'none',
+  },
+  jokerCenter: {
+    marginTop: '16%',
     alignItems: 'center',
   },
-  cornerRank: {
-    fontWeight: '700',
-  },
-  suit: {
-    marginTop: '30%',
-    marginLeft: '25%',
-  },
-  joker: {
+  jokerStar: {
     color: colors.goldDark,
+    userSelect: 'none',
   },
   jokerLabel: {
-    fontWeight: '800',
+    fontFamily: fonts.display,
     letterSpacing: 1,
     color: colors.cardBlack,
-  },
-  represents: {
-    position: 'absolute',
-    top: 2,
-    left: 4,
-    fontWeight: '700',
+    userSelect: 'none',
   },
   back: {
     backgroundColor: colors.cardBack,
-    borderWidth: 2,
-    borderColor: colors.cardFace,
-    padding: 4,
+    borderWidth: 1,
+    borderColor: colors.cardBackDark,
+    boxShadow: shadows.card,
   },
   backInner: {
     flex: 1,
-    borderRadius: radius.sm,
     borderWidth: 1,
     borderColor: colors.cardBackAccent,
+    backgroundColor: colors.cardBackDark,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backEmblem: {
+    borderWidth: 1,
+    borderColor: colors.cardBackAccent,
+    backgroundColor: colors.cardBack,
     alignItems: 'center',
     justifyContent: 'center',
   },
   backText: {
-    color: colors.cardFace,
-    fontWeight: '800',
+    color: colors.cardBackAccent,
+    fontFamily: fonts.displayHeavy,
+    userSelect: 'none',
   },
 });

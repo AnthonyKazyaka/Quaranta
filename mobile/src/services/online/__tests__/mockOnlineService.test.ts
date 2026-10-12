@@ -193,7 +193,8 @@ describe('playing', () => {
     await advance(LATENCY);
     const after = await move;
     expect(after.view!.hand).toHaveLength(14);
-    expect(after.view!.version).toBe(before.version + 1);
+    // Computer players may ask to buy straight after the draw, which also counts as actions.
+    expect(after.view!.version).toBeGreaterThan(before.version);
   });
 
   it('rejects illegal moves with the rule that was broken', async () => {
@@ -284,27 +285,25 @@ describe('playing', () => {
   });
 });
 
-describe('buy windows', () => {
-  it('does not count an unanswered buy offer as a missed turn', async () => {
+describe('buying', () => {
+  it('lets the human ask to buy without the turn-version check, and does not count it as a move', async () => {
     const { service, gameId } = await startedGame({ seatCount: 3, turnSeconds: 15 });
-    type Internals = {
-      rooms: Map<string, { game: GameState; seats: { uid: string | null; timeouts: number; autoplay: boolean }[] }>;
-      onDeadline: (room: unknown) => void;
-    };
-    const internals = service as unknown as Internals;
-    const room = internals.rooms.get(gameId)!;
+    type Internals = { rooms: Map<string, { game: GameState; seats: { uid: string | null; timeouts: number }[] }> };
+    const room = (service as unknown as Internals).rooms.get(gameId)!;
 
-    // The last seat draws past a discard thrown by the middle seat, so only the human (first seat) may buy.
+    // The last seat draws past a discard thrown by the middle seat, which opens a buy window for the human.
     room.game = applyAction(
-      { ...room.game, currentPlayerIndex: 2, turnStage: 'draw', discardBuyable: true },
+      { ...room.game, currentPlayerIndex: 2, turnStage: 'draw', firstDiscardId: null },
       { type: 'drawFromDeck', playerId: room.game.players[2].id },
     );
-    expect(room.game.buyOffer?.eligible).toEqual([service.uid]);
+    expect(room.game.buyWindow).not.toBeNull();
 
-    internals.onDeadline(room);
-    const mine = room.seats.find((s) => s.uid === service.uid)!;
-    expect(room.game.buyOffer).toBeNull();
-    expect(mine).toMatchObject({ timeouts: 0, autoplay: false });
+    const version = room.game.version;
+    const request = service.submitAction(gameId, { type: 'buy', playerId: service.uid }, -1);
+    await advance(LATENCY);
+    await request;
+    expect(room.game.buyWindow?.requests).toContain(service.uid);
+    expect(room.game.version).toBe(version + 1);
   });
 });
 

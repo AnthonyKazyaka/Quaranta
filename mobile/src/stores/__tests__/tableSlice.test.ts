@@ -112,7 +112,7 @@ describe('other table actions', () => {
       () => ui,
       { getView: () => view, send: () => new Promise<boolean>((resolve) => (release = resolve)) },
     );
-    slice.buy();
+    slice.buyDiscard();
     expect(ui.pending).toBe(true);
     release(true);
     await Promise.resolve();

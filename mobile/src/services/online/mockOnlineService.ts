@@ -2,16 +2,17 @@ import {
   GameAction,
   GameRuleError,
   GameState,
-  actorsToMove,
   applyAction,
+  canBuy,
   chooseBotAction,
+  chooseBotBuy,
   createGame,
+  currentPlayer,
   getPlayerView,
   safeBotAction,
 } from '@quaranta/shared';
 import { BOT_NAMES } from '@/botNames';
 import {
-  BUY_WINDOW_SECONDS,
   MAX_TABLE_SEATS,
   MIN_TABLE_SEATS,
   OnlineError,
@@ -219,8 +220,9 @@ export class MockOnlineService implements OnlineService {
       }
       if (!game) throw new OnlineError('invalid', "The game hasn't started yet.");
 
-      // Buy answers are meant to arrive at the same time, so only turn moves are checked for staleness.
-      const concurrent = action.type === 'buy' || action.type === 'passBuy' || action.type === 'nextRound';
+      // Buy requests come from players who are not on the move, so they cannot be checked against the
+      // turn's version; only the current player's moves are checked for staleness.
+      const concurrent = action.type === 'buy' || action.type === 'nextRound';
       if (!concurrent && expectedVersion !== game.version) {
         throw new OnlineError('stale', 'The table moved on while you were playing. Look again and retry.');
       }
@@ -426,8 +428,24 @@ export class MockOnlineService implements OnlineService {
   }
 
   private apply(room: Room, action: GameAction) {
-    if (!room.game) return;
-    room.game = applyAction(room.game, action);
+    const previous = room.game;
+    if (!previous) return;
+    room.game = this.runComputerBuys(room, previous, applyAction(previous, action));
+  }
+
+  /** When a buy window opens, every computer player (and active friend) decides whether to ask for the card. */
+  private runComputerBuys(room: Room, previous: GameState, next: GameState): GameState {
+    const window = next.buyWindow;
+    if (!window || previous.buyWindow?.cardId === window.cardId) return next;
+    let state = next;
+    for (const player of state.players) {
+      const seat = this.seatOf(room, player.id);
+      const decides = !!seat && (seat.isBot || seat.autoplay || seat.left || (seat.sim && !seat.idle));
+      if (decides && canBuy(state, player.id) && chooseBotBuy(state, player.id)) {
+        state = applyAction(state, { type: 'buy', playerId: player.id });
+      }
+    }
+    return state;
   }
 
   /** Bookkeeping after anything changed: finish the table if the game ended, tell watchers, schedule what's next. */
@@ -459,34 +477,30 @@ export class MockOnlineService implements OnlineService {
       return;
     }
 
-    const pending = actorsToMove(game).flatMap((id) => {
-      const seat = this.seatOf(room, id);
-      return seat ? [{ id, seat }] : [];
-    });
-    const serverControlled = (s: SeatState) => s.isBot || s.autoplay || s.left;
-    const bots = pending.filter((p) => serverControlled(p.seat));
-    const friends = pending.filter((p) => !serverControlled(p.seat) && p.seat.sim && !p.seat.idle);
-    const onTheClock = pending.filter((p) => !serverControlled(p.seat));
+    // Only the player whose turn it is can be waited on; buying happens out of turn.
+    const mover = currentPlayer(game);
+    const seat = this.seatOf(room, mover.id);
+    const serverControlled = !seat || seat.isBot || seat.autoplay || seat.left;
+    const friendMoves = !!seat && !serverControlled && seat.sim && !seat.idle;
 
-    if (bots.length > 0) {
-      room.botTimer = setTimeout(() => this.moveFor(room, bots[0].id), this.options.botDelayMs);
-    }
-    if (friends.length > 0) {
+    if (serverControlled) {
+      room.botTimer = setTimeout(() => this.moveFor(room, mover.id), this.options.botDelayMs);
+    } else if (friendMoves) {
       const [min, max] = this.options.thinkMs;
-      room.simTimer = setTimeout(() => this.moveFor(room, friends[0].id), min + this.options.random() * (max - min));
+      room.simTimer = setTimeout(() => this.moveFor(room, mover.id), min + this.options.random() * (max - min));
     }
 
-    if (onTheClock.length === 0) {
+    if (serverControlled) {
       clearTimeout(room.deadlineTimer);
       room.deadlineTimer = undefined;
       room.deadline = null;
       room.deadlineKey = null;
       return;
     }
-    // One clock per turn (or per buy window), however many moves are made inside it.
-    const key = `${game.phaseIndex}:${game.currentPlayerIndex}:${game.buyOffer ? `buy:${game.buyOffer.card.id}` : 'turn'}`;
+    // One clock per turn, however many moves are made inside it.
+    const key = `${game.phaseIndex}:${game.currentPlayerIndex}`;
     if (key !== room.deadlineKey || room.deadline === null) {
-      const seconds = game.buyOffer ? Math.min(BUY_WINDOW_SECONDS, room.settings.turnSeconds) : room.settings.turnSeconds;
+      const seconds = room.settings.turnSeconds;
       room.deadlineKey = key;
       room.deadline = this.options.now() + seconds * 1000;
       clearTimeout(room.deadlineTimer);
@@ -503,9 +517,9 @@ export class MockOnlineService implements OnlineService {
   /** A computer player or friend makes one move. */
   private moveFor(room: Room, playerId: string) {
     const game = room.game;
-    if (!game || game.status !== 'playing' || !actorsToMove(game).includes(playerId)) return;
+    if (!game || game.status !== 'playing' || currentPlayer(game).id !== playerId) return;
     try {
-      this.apply(room, chooseBotAction(game, playerId));
+      this.apply(room, chooseBotAction(game));
     } catch {
       this.apply(room, safeBotAction(game, playerId));
     }
@@ -514,21 +528,15 @@ export class MockOnlineService implements OnlineService {
     this.afterChange(room);
   }
 
-  /** The clock ran out: a bot plays for everyone still on it, and repeat offenders get replaced. */
+  /** The clock ran out: a bot plays the turn, and repeat offenders get replaced. */
   private onDeadline(room: Room) {
     room.deadlineTimer = undefined;
     const game = room.game;
     if (!game || game.status !== 'playing') return;
 
-    // Only a missed turn counts toward a takeover. Not answering a buy offer is just a pass.
-    const missedTurn = !game.buyOffer;
-    const late = actorsToMove(game).flatMap((id) => {
-      const seat = this.seatOf(room, id);
-      return seat && !(seat.isBot || seat.autoplay || seat.left) ? [seat] : [];
-    });
-    for (const seat of late) {
+    const seat = this.seatOf(room, currentPlayer(game).id);
+    if (seat && !(seat.isBot || seat.autoplay || seat.left)) {
       this.autoplayTurn(room, seat.uid as string);
-      if (!missedTurn) continue;
       seat.timeouts++;
       if (seat.timeouts >= TIMEOUTS_BEFORE_TAKEOVER) seat.autoplay = true;
     }
@@ -536,22 +544,19 @@ export class MockOnlineService implements OnlineService {
     this.afterChange(room);
   }
 
-  /** Plays the player's turn (or buy decision) for them. */
+  /** Plays the player's turn for them. */
   private autoplayTurn(room: Room, playerId: string) {
     for (let i = 0; i < MAX_ACTIONS_PER_AUTOPLAYED_TURN; i++) {
       const game = room.game;
-      if (!game || game.status !== 'playing' || !actorsToMove(game).includes(playerId)) return;
-      const wasBuying = !!game.buyOffer;
+      if (!game || game.status !== 'playing' || currentPlayer(game).id !== playerId) return;
       try {
-        this.apply(room, wasBuying ? { type: 'passBuy', playerId } : chooseBotAction(game, playerId));
+        this.apply(room, chooseBotAction(game));
       } catch {
         this.apply(room, safeBotAction(game, playerId));
       }
-      // A buy answer is the whole job; a turn is over once play moves on or a buy offer opens.
-      if (wasBuying || room.game?.buyOffer || room.game?.currentPlayerIndex !== game.currentPlayerIndex) return;
     }
     const game = room.game;
-    if (game && game.status === 'playing' && actorsToMove(game).includes(playerId)) {
+    if (game && game.status === 'playing' && currentPlayer(game).id === playerId) {
       this.apply(room, safeBotAction(game, playerId));
     }
   }

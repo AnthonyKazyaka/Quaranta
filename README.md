@@ -54,16 +54,17 @@ Data model: `users/{uid}/games/{gameId}` holds a summary (status, hand, players,
 - Draw from the deck or the discard pile, open once per hand, then (on later turns) lay runs or sets of 3+, add to any meld on the table and swap natural cards for jokers.
 - Discard limits: no card that plays on the table, and no high cards in the first two hands until everyone has opened. If every card is blocked, any card may go.
 - Scoring: 2 through 10 at face value, faces 10, Aces 1 (or 11 each if you hold more than one), jokers 25, capped at 100 per hand. In All Down, anyone holding cards takes 100.
-
-Buying: when the current player draws from the deck instead of taking the top discard, the other players may buy that discard before play continues (never the first card turned up or a joker). The buyer takes just that card. If several players want it, whoever is closest to the current player's left wins; the player who threw it can't buy it back. There's no limit on how many times a player can buy.
-
-Own pace mode (the alternative to Classic): each player works through the openings at their own pace. After a hand in which you opened you move on to your next opening; otherwise you try the same one again. The game ends after the hand in which someone opens with All Down (or after 20 hands), and whoever completed the most openings wins, with points breaking ties.
+- Buying: when the current player draws from the deck, anyone else (open or not) may buy the top discard they passed over, except jokers and the card turned up when the hand is dealt. The offer stays open until that player discards; then the first requester in turn order after them gets the card. The buyer takes only that card. There's no limit.
+- Stakes (play money): everyone antes 25¢ each hand and pays 10¢ per card bought; whoever goes out takes the pot. The game's winner collects 50¢ from every other player. Amounts are `STAKES` in `shared/src/game.ts`.
 
 House rules added during the port (easy to change in `shared/src/game.ts`):
 
 - Runs can play an Ace low or high but don't wrap (K-A-2).
 - A player can also go out by melding their last card rather than discarding it.
-- If the deck runs out a third time in one hand, the hand ends with nobody going out.
+- A hand only ends when someone goes out. Whenever the deck runs dry, the discards under the top card are shuffled into a new deck; if there's nothing to shuffle, the player takes the top discard.
+- Players tied for first at the end of the game split the payout.
+
+Own pace mode (the alternative to Classic): each player works through the openings at their own pace. After a hand in which you opened you move on to your next opening; otherwise you try the same one again. The game ends after the hand in which someone opens with All Down (or after 20 hands), and whoever completed the most openings wins, with points breaking ties. A variant for custom games, such as a configurable buy penalty, is not built yet.
 
 ## Online play (demo)
 
@@ -84,4 +85,4 @@ Inside a game, **Demo controls** drops your connection or freezes a friend so yo
 - [ ] Real online multiplayer backend: Cloud Functions and Firestore behind `OnlineService`, replacing the mock (needs the Blaze plan; see docs/MULTIPLAYER.md).
 - [ ] Real Google sign-in linking and push notifications for turns (both are demo stand-ins today).
 - [ ] Final art pass on the app icon and splash (first version is in `mobile/assets/`).
-- [ ] Custom game variants, later. For example a configurable penalty-card count. That would mean a serializable `rules` object on `GameState`, set in `createGame`. The main game comes first.
+- [ ] Custom game variants, later. For example a configurable penalty-card count. That would mean a serializable `rules` object on `GameState`, set in `createGame`.

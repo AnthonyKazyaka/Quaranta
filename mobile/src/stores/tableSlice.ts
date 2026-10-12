@@ -1,4 +1,4 @@
-import { GameAction, PlayerView, findSwappableJoker, tryAddToMeld } from '@quaranta/shared';
+import { GameAction, PlayerView, findSwappableJoker, tryAddToMeld, viewBuyOfferKey } from '@quaranta/shared';
 
 export type SortOrder = 'suit' | 'rank';
 
@@ -15,6 +15,8 @@ export interface TableUiState {
   stagedMelds: string[][];
   sortBy: SortOrder;
   message: StoreMessage | null;
+  /** The buy offer the player declined (see `viewBuyOfferKey`), so the table stops waiting on them. */
+  buyPassedKey: string | null;
   /** A move has been sent and is waiting to be confirmed (only ever true for online games). */
   pending: boolean;
 }
@@ -33,7 +35,9 @@ export interface TableUiActions {
   laySelection: () => void;
   discardSelection: () => void;
   playSelectionOnMeld: (meldId: string) => void;
-  buy: () => void;
+  /** Asks to buy the discard on offer. */
+  buyDiscard: () => void;
+  /** Declines the discard on offer. Nothing is sent: passing is just not asking. */
   passBuy: () => void;
   nextRound: () => void;
 }
@@ -45,6 +49,7 @@ export const initialTableUi: TableUiState = {
   stagedMelds: [],
   sortBy: 'suit',
   message: null,
+  buyPassedKey: null,
   pending: false,
 };
 
@@ -126,8 +131,11 @@ export function createTableSlice(
 
     drawFromDeck: () => act((playerId) => ({ type: 'drawFromDeck', playerId })),
     drawFromDiscard: () => act((playerId) => ({ type: 'drawFromDiscard', playerId })),
-    buy: () => act((playerId) => ({ type: 'buy', playerId })),
-    passBuy: () => act((playerId) => ({ type: 'passBuy', playerId })),
+    buyDiscard: () => act((playerId) => ({ type: 'buy', playerId })),
+    passBuy: () => {
+      const view = host.getView();
+      set({ buyPassedKey: view ? viewBuyOfferKey(view) : null });
+    },
 
     openWithStaged: () => {
       const { stagedMelds, selectedIds } = get();
