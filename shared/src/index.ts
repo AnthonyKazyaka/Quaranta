@@ -5,3 +5,4 @@ export * from './openingConditions';
 export * from './scoring';
 export * from './game';
 export * from './bot';
+export * from './playerView';
